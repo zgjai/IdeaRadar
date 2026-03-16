@@ -86,7 +86,7 @@ export default function DashboardPage() {
     return (
       <div className="p-8">
         <div className="flex items-center justify-center h-64">
-          <p className="text-slate-500">Loading dashboard...</p>
+          <p className="text-slate-500">加载仪表盘中...</p>
         </div>
       </div>
     );
@@ -95,39 +95,39 @@ export default function DashboardPage() {
   return (
     <div className="p-8">
       <div className="mb-8">
-        <h1 className="text-3xl font-bold text-slate-900 mb-2">Dashboard</h1>
-        <p className="text-slate-600">Monitor your product idea discovery pipeline</p>
+        <h1 className="text-3xl font-bold text-slate-900 mb-2">仪表盘</h1>
+        <p className="text-slate-600">监控产品创意发现与分析流程</p>
       </div>
 
       {/* KPI Cards */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
         <StatCard
           icon={Lightbulb}
-          title="Total Ideas"
+          title="创意总数"
           value={stats?.totalIdeas || 0}
         />
         <StatCard
           icon={Brain}
-          title="Analyzed"
+          title="已分析"
           value={stats?.analyzedCount || 0}
         />
         <StatCard
           icon={Database}
-          title="Sources Online"
+          title="在线数据源"
           value={stats?.sourcesOnline?.length || 0}
         />
         <StatCard
           icon={TrendingUp}
-          title="New This Week"
+          title="本周新增"
           value={stats?.recentCount || 0}
-          change={`+${stats?.recentCount || 0} this week`}
+          change={`本周 +${stats?.recentCount || 0}`}
         />
       </div>
 
       {/* Quick Actions */}
       <Card className="mb-8">
         <CardHeader>
-          <CardTitle>Quick Actions</CardTitle>
+          <CardTitle>快捷操作</CardTitle>
         </CardHeader>
         <CardContent>
           <div className="flex gap-4">
@@ -135,14 +135,14 @@ export default function DashboardPage() {
               onClick={handleCollect}
               disabled={collecting}
             >
-              {collecting ? 'Collecting...' : 'Collect Data'}
+              {collecting ? '采集中...' : '采集数据'}
             </Button>
             <Button
               variant="secondary"
               onClick={handleAnalyze}
               disabled={analyzing}
             >
-              {analyzing ? 'Analyzing...' : 'Run Analysis'}
+              {analyzing ? '分析中...' : '运行分析'}
             </Button>
           </div>
         </CardContent>

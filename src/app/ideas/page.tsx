@@ -81,9 +81,9 @@ export default function IdeasPage() {
   return (
     <div className="p-8">
       <div className="mb-8">
-        <h1 className="text-3xl font-bold text-slate-900 mb-2">Ideas</h1>
+        <h1 className="text-3xl font-bold text-slate-900 mb-2">创意库</h1>
         <p className="text-slate-600">
-          {total} ideas discovered and analyzed
+          已发现并分析 {total} 个创意
         </p>
       </div>
 
@@ -104,7 +104,7 @@ export default function IdeasPage() {
 
       {loading ? (
         <div className="flex items-center justify-center h-64">
-          <p className="text-slate-500">Loading ideas...</p>
+          <p className="text-slate-500">加载创意列表中...</p>
         </div>
       ) : (
         <>
@@ -114,7 +114,7 @@ export default function IdeasPage() {
           {totalPages > 1 && (
             <div className="mt-6 flex items-center justify-between">
               <p className="text-sm text-slate-600">
-                Page {page} of {totalPages}
+                第 {page} / {totalPages} 页
               </p>
 
               <div className="flex gap-2">
@@ -125,7 +125,7 @@ export default function IdeasPage() {
                   disabled={page === 1}
                 >
                   <ChevronLeft className="w-4 h-4 mr-1" />
-                  Previous
+                  上一页
                 </Button>
 
                 {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
@@ -158,7 +158,7 @@ export default function IdeasPage() {
                   onClick={() => handlePageChange(page + 1)}
                   disabled={page === totalPages}
                 >
-                  Next
+                  下一页
                   <ChevronRight className="w-4 h-4 ml-1" />
                 </Button>
               </div>

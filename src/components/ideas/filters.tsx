@@ -36,36 +36,36 @@ export function Filters({
         <div className="lg:col-span-2">
           <Input
             type="text"
-            placeholder="Search ideas..."
+            placeholder="搜索创意..."
             value={search}
             onChange={(e) => onSearchChange(e.target.value)}
           />
         </div>
 
         <Select value={category} onChange={(e) => onCategoryChange(e.target.value)}>
-          <option value="">All Categories</option>
+          <option value="">全部分类</option>
           <option value="SaaS">SaaS</option>
-          <option value="Mobile App">Mobile App</option>
-          <option value="Web Service">Web Service</option>
-          <option value="Developer Tool">Developer Tool</option>
-          <option value="Productivity">Productivity</option>
-          <option value="Other">Other</option>
+          <option value="Mobile App">移动应用</option>
+          <option value="Web Service">Web 服务</option>
+          <option value="Developer Tool">开发者工具</option>
+          <option value="Productivity">效率工具</option>
+          <option value="Other">其他</option>
         </Select>
 
         <Select value={source} onChange={(e) => onSourceChange(e.target.value)}>
-          <option value="">All Sources</option>
+          <option value="">全部来源</option>
           <option value="HN">Hacker News</option>
           <option value="PH">Product Hunt</option>
           <option value="GT">Google Trends</option>
         </Select>
 
         <Select value={rank} onChange={(e) => onRankChange(e.target.value)}>
-          <option value="">All Ranks</option>
-          <option value="S">S Rank</option>
-          <option value="A">A Rank</option>
-          <option value="B">B Rank</option>
-          <option value="C">C Rank</option>
-          <option value="D">D Rank</option>
+          <option value="">全部等级</option>
+          <option value="S">S 级</option>
+          <option value="A">A 级</option>
+          <option value="B">B 级</option>
+          <option value="C">C 级</option>
+          <option value="D">D 级</option>
         </Select>
 
         <Select
@@ -76,10 +76,10 @@ export function Filters({
             onOrderChange(newOrder);
           }}
         >
-          <option value="finalScore-desc">Score: High to Low</option>
-          <option value="finalScore-asc">Score: Low to High</option>
-          <option value="discoveredAt-desc">Newest First</option>
-          <option value="discoveredAt-asc">Oldest First</option>
+          <option value="finalScore-desc">评分: 从高到低</option>
+          <option value="finalScore-asc">评分: 从低到高</option>
+          <option value="discoveredAt-desc">最新发现</option>
+          <option value="discoveredAt-asc">最早发现</option>
         </Select>
       </div>
     </div>

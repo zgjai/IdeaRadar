@@ -40,10 +40,10 @@ export function IdeaTable({ ideas }: IdeaTableProps) {
   };
 
   const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleDateString('en-US', {
+    return new Date(dateString).toLocaleDateString('zh-CN', {
+      year: 'numeric',
       month: 'short',
       day: 'numeric',
-      year: 'numeric',
     });
   };
 
@@ -52,26 +52,26 @@ export function IdeaTable({ ideas }: IdeaTableProps) {
       <table className="w-full">
         <thead className="bg-slate-50 border-b border-slate-200">
           <tr>
-            <th className="px-6 py-3 text-left text-xs font-medium text-slate-600 uppercase tracking-wider">
-              Rank
+            <th className="px-6 py-3 text-left text-xs font-medium text-slate-600 tracking-wider">
+              等级
             </th>
-            <th className="px-6 py-3 text-left text-xs font-medium text-slate-600 uppercase tracking-wider">
-              Title
+            <th className="px-6 py-3 text-left text-xs font-medium text-slate-600 tracking-wider">
+              标题
             </th>
-            <th className="px-6 py-3 text-left text-xs font-medium text-slate-600 uppercase tracking-wider">
-              Score
+            <th className="px-6 py-3 text-left text-xs font-medium text-slate-600 tracking-wider">
+              评分
             </th>
-            <th className="px-6 py-3 text-left text-xs font-medium text-slate-600 uppercase tracking-wider">
-              Category
+            <th className="px-6 py-3 text-left text-xs font-medium text-slate-600 tracking-wider">
+              分类
             </th>
-            <th className="px-6 py-3 text-left text-xs font-medium text-slate-600 uppercase tracking-wider">
-              Source
+            <th className="px-6 py-3 text-left text-xs font-medium text-slate-600 tracking-wider">
+              来源
             </th>
-            <th className="px-6 py-3 text-left text-xs font-medium text-slate-600 uppercase tracking-wider">
-              Trend
+            <th className="px-6 py-3 text-left text-xs font-medium text-slate-600 tracking-wider">
+              趋势
             </th>
-            <th className="px-6 py-3 text-left text-xs font-medium text-slate-600 uppercase tracking-wider">
-              Discovered
+            <th className="px-6 py-3 text-left text-xs font-medium text-slate-600 tracking-wider">
+              发现时间
             </th>
           </tr>
         </thead>
@@ -129,7 +129,7 @@ export function IdeaTable({ ideas }: IdeaTableProps) {
 
       {ideas.length === 0 && (
         <div className="text-center py-12">
-          <p className="text-slate-500">No ideas found</p>
+          <p className="text-slate-500">暂无创意数据</p>
         </div>
       )}
     </div>

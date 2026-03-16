@@ -4,8 +4,8 @@ import Link from 'next/link';
 import './globals.css';
 
 export const metadata: Metadata = {
-  title: 'IdeaRadar - AI-Powered Product Idea Discovery',
-  description: 'Discover and analyze product ideas from the internet',
+  title: 'IdeaRadar - AI驱动的产品创意发现平台',
+  description: '从互联网多渠道发现并分析产品创意',
 };
 
 export default function RootLayout({
@@ -14,7 +14,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="en">
+    <html lang="zh-CN">
       <body className="bg-slate-50">
         <div className="flex min-h-screen">
           {/* Sidebar */}
@@ -34,7 +34,7 @@ export default function RootLayout({
                     className="flex items-center gap-3 px-4 py-3 text-slate-700 hover:bg-slate-100 rounded-lg transition-colors"
                   >
                     <LayoutDashboard className="w-5 h-5" />
-                    Dashboard
+                    仪表盘
                   </Link>
                 </li>
                 <li>
@@ -43,7 +43,7 @@ export default function RootLayout({
                     className="flex items-center gap-3 px-4 py-3 text-slate-700 hover:bg-slate-100 rounded-lg transition-colors"
                   >
                     <Lightbulb className="w-5 h-5" />
-                    Ideas
+                    创意库
                   </Link>
                 </li>
                 <li>
@@ -52,7 +52,7 @@ export default function RootLayout({
                     className="flex items-center gap-3 px-4 py-3 text-slate-700 hover:bg-slate-100 rounded-lg transition-colors"
                   >
                     <Settings className="w-5 h-5" />
-                    Settings
+                    设置
                   </Link>
                 </li>
               </ul>

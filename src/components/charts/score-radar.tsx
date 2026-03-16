@@ -14,11 +14,11 @@ interface ScoreRadarProps {
 
 export function ScoreRadar({ scores }: ScoreRadarProps) {
   const data = [
-    { metric: 'Trend', value: scores.trendScore },
-    { metric: 'Demand', value: scores.demandScore },
-    { metric: 'Competition', value: scores.competitionScore },
-    { metric: 'Feasibility', value: scores.feasibilityScore },
-    { metric: 'Growth', value: scores.growthScore },
+    { metric: '趋势', value: scores.trendScore },
+    { metric: '需求', value: scores.demandScore },
+    { metric: '竞争', value: scores.competitionScore },
+    { metric: '可行性', value: scores.feasibilityScore },
+    { metric: '增长', value: scores.growthScore },
   ];
 
   return (
@@ -35,7 +35,7 @@ export function ScoreRadar({ scores }: ScoreRadarProps) {
           tick={{ fill: '#94a3b8', fontSize: 10 }}
         />
         <Radar
-          name="Score"
+          name="评分"
           dataKey="value"
           stroke="#2563eb"
           fill="#2563eb"

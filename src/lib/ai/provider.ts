@@ -149,6 +149,26 @@ export async function createAIProvider(type: 'screening' | 'analysis'): Promise<
 // Get AI config from database settings or environment
 async function getAIConfig(type: 'screening' | 'analysis'): Promise<AIProviderConfig> {
   const prefix = `ai.${type}`;
+  const envApiKey = process.env.AI_GATEWAY_API_KEY || process.env.OPENAI_API_KEY || process.env.ANTHROPIC_API_KEY || '';
+  const envBaseUrl = process.env.AI_GATEWAY_URL || 'https://ai-gateway.happycapy.ai/api/v1';
+
+  const defaults: AIProviderConfig = type === 'screening'
+    ? {
+        provider: 'openrouter',
+        model: process.env.AI_SCREENING_MODEL || 'anthropic/claude-haiku-4.5',
+        apiKey: envApiKey,
+        baseUrl: envBaseUrl,
+        temperature: 0.3,
+        maxTokens: 2048,
+      }
+    : {
+        provider: 'openrouter',
+        model: process.env.AI_ANALYSIS_MODEL || 'anthropic/claude-sonnet-4.6',
+        apiKey: envApiKey,
+        baseUrl: envBaseUrl,
+        temperature: 0.3,
+        maxTokens: 4096,
+      };
 
   try {
     // Try to get from database
@@ -157,40 +177,26 @@ async function getAIConfig(type: 'screening' | 'analysis'): Promise<AIProviderCo
     });
 
     if (settingsRows.length > 0) {
-      const config: Partial<AIProviderConfig> = {};
+      const dbConfig: Record<string, string> = {};
       settingsRows.forEach((row) => {
         const key = row.key.replace(`${prefix}.`, '');
-        config[key as keyof AIProviderConfig] = row.value as any;
+        dbConfig[key] = row.value;
       });
 
-      if (config.provider && config.model && config.apiKey) {
-        return config as AIProviderConfig;
-      }
+      // Merge DB settings with defaults -- DB values take priority, but
+      // fall back to env vars for missing/empty fields (especially apiKey)
+      return {
+        provider: (dbConfig.provider || defaults.provider) as AIProviderConfig['provider'],
+        model: dbConfig.model || defaults.model,
+        apiKey: dbConfig.apiKey || defaults.apiKey,
+        baseUrl: dbConfig.baseUrl || defaults.baseUrl,
+        temperature: dbConfig.temperature ? parseFloat(dbConfig.temperature) : defaults.temperature,
+        maxTokens: dbConfig.maxTokens ? parseInt(dbConfig.maxTokens) : defaults.maxTokens,
+      };
     }
   } catch (error) {
     console.warn('Failed to load AI config from database:', error);
   }
 
-  // Fall back to environment variables
-  const apiKey = process.env.AI_GATEWAY_API_KEY || process.env.OPENAI_API_KEY || process.env.ANTHROPIC_API_KEY || '';
-
-  if (type === 'screening') {
-    return {
-      provider: 'openrouter',
-      model: process.env.AI_SCREENING_MODEL || 'anthropic/claude-haiku-4.5',
-      apiKey,
-      baseUrl: process.env.AI_GATEWAY_URL || 'https://ai-gateway.happycapy.ai/api/v1',
-      temperature: 0.3,
-      maxTokens: 2048,
-    };
-  } else {
-    return {
-      provider: 'openrouter',
-      model: process.env.AI_ANALYSIS_MODEL || 'anthropic/claude-sonnet-4.6',
-      apiKey,
-      baseUrl: process.env.AI_GATEWAY_URL || 'https://ai-gateway.happycapy.ai/api/v1',
-      temperature: 0.3,
-      maxTokens: 4096,
-    };
-  }
+  return defaults;
 }

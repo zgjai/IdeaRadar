@@ -13,7 +13,7 @@ interface TrendLineProps {
 
 export function TrendLine({ data }: TrendLineProps) {
   const formattedData = data.map((point) => ({
-    date: new Date(point.date).toLocaleDateString('en-US', {
+    date: new Date(point.date).toLocaleDateString('zh-CN', {
       month: 'short',
       day: 'numeric'
     }),

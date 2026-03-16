@@ -64,7 +64,7 @@ export default function IdeaDetailPage() {
     return (
       <div className="p-8">
         <div className="flex items-center justify-center h-64">
-          <p className="text-slate-500">Loading idea details...</p>
+          <p className="text-slate-500">加载创意详情中...</p>
         </div>
       </div>
     );
@@ -74,9 +74,9 @@ export default function IdeaDetailPage() {
     return (
       <div className="p-8">
         <div className="text-center py-12">
-          <p className="text-slate-500 mb-4">Idea not found</p>
+          <p className="text-slate-500 mb-4">未找到该创意</p>
           <Link href="/ideas">
-            <Button variant="outline">Back to Ideas</Button>
+            <Button variant="outline">返回创意库</Button>
           </Link>
         </div>
       </div>
@@ -111,10 +111,10 @@ export default function IdeaDetailPage() {
   };
 
   const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleDateString('en-US', {
+    return new Date(dateString).toLocaleDateString('zh-CN', {
+      year: 'numeric',
       month: 'long',
       day: 'numeric',
-      year: 'numeric',
       hour: 'numeric',
       minute: 'numeric',
     });
@@ -126,7 +126,7 @@ export default function IdeaDetailPage() {
         <Link href="/ideas">
           <Button variant="ghost" size="sm">
             <ArrowLeft className="w-4 h-4 mr-2" />
-            Back to Ideas
+            返回创意库
           </Button>
         </Link>
       </div>
@@ -144,7 +144,7 @@ export default function IdeaDetailPage() {
                 {idea.source}
               </span>
               <span className="text-lg font-bold text-blue-600">
-                Score: {idea.finalScore}
+                评分: {idea.finalScore}
               </span>
             </div>
           </div>
@@ -152,7 +152,7 @@ export default function IdeaDetailPage() {
             <a href={idea.url} target="_blank" rel="noopener noreferrer">
               <Button variant="outline">
                 <ExternalLink className="w-4 h-4 mr-2" />
-                View Original
+                查看原文
               </Button>
             </a>
           )}
@@ -163,7 +163,7 @@ export default function IdeaDetailPage() {
         {/* Score Radar Chart */}
         <Card>
           <CardHeader>
-            <CardTitle>Score Breakdown</CardTitle>
+            <CardTitle>评分分布</CardTitle>
           </CardHeader>
           <CardContent>
             <ScoreRadar
@@ -182,7 +182,7 @@ export default function IdeaDetailPage() {
         {idea.analysis?.summary && (
           <Card>
             <CardHeader>
-              <CardTitle>AI Analysis Summary</CardTitle>
+              <CardTitle>AI 分析摘要</CardTitle>
             </CardHeader>
             <CardContent>
               <p className="text-slate-700 leading-relaxed mb-4">
@@ -206,14 +206,14 @@ export default function IdeaDetailPage() {
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <Target className="w-5 h-5 text-blue-600" />
-              Pain Point
+              用户痛点
             </CardTitle>
           </CardHeader>
           <CardContent>
             <p className="text-slate-700 mb-3">{idea.analysis.painPoint}</p>
             {idea.analysis.painPointIntensity !== undefined && (
               <div>
-                <p className="text-sm text-slate-600 mb-2">Intensity</p>
+                <p className="text-sm text-slate-600 mb-2">痛点强度</p>
                 <div className="w-full h-3 bg-slate-200 rounded-full overflow-hidden">
                   <div
                     className="h-full bg-blue-600"
@@ -234,7 +234,7 @@ export default function IdeaDetailPage() {
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <Users className="w-5 h-5 text-blue-600" />
-                Target Users
+                目标用户
               </CardTitle>
             </CardHeader>
             <CardContent>
@@ -246,7 +246,7 @@ export default function IdeaDetailPage() {
         {idea.analysis?.coreFeatures && idea.analysis.coreFeatures.length > 0 && (
           <Card>
             <CardHeader>
-              <CardTitle>Core Features</CardTitle>
+              <CardTitle>核心功能</CardTitle>
             </CardHeader>
             <CardContent>
               <div className="flex flex-wrap gap-2">
@@ -266,7 +266,7 @@ export default function IdeaDetailPage() {
         {idea.analysis?.competitors && idea.analysis.competitors.length > 0 && (
           <Card>
             <CardHeader>
-              <CardTitle>Competitors</CardTitle>
+              <CardTitle>竞争对手</CardTitle>
             </CardHeader>
             <CardContent>
               <ul className="space-y-2">
@@ -284,7 +284,7 @@ export default function IdeaDetailPage() {
         {idea.analysis?.techFeasibility && (
           <Card>
             <CardHeader>
-              <CardTitle>Technical Feasibility</CardTitle>
+              <CardTitle>技术可行性</CardTitle>
             </CardHeader>
             <CardContent>
               <p className="text-slate-700">{idea.analysis.techFeasibility}</p>
@@ -297,7 +297,7 @@ export default function IdeaDetailPage() {
       {idea.trendHistory && idea.trendHistory.length > 0 && (
         <Card className="mb-6">
           <CardHeader>
-            <CardTitle>Trend History</CardTitle>
+            <CardTitle>趋势历史</CardTitle>
           </CardHeader>
           <CardContent>
             <TrendLine data={idea.trendHistory} />
@@ -308,33 +308,33 @@ export default function IdeaDetailPage() {
       {/* Metadata */}
       <Card>
         <CardHeader>
-          <CardTitle>Metadata</CardTitle>
+          <CardTitle>元数据</CardTitle>
         </CardHeader>
         <CardContent>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
             <div>
-              <p className="text-sm text-slate-600 mb-1">Source</p>
+              <p className="text-sm text-slate-600 mb-1">来源</p>
               <span className={`px-2 py-1 text-xs font-medium rounded ${getSourceColor(idea.source)}`}>
                 {idea.source}
               </span>
             </div>
             <div>
-              <p className="text-sm text-slate-600 mb-1">Category</p>
+              <p className="text-sm text-slate-600 mb-1">分类</p>
               <p className="text-sm font-medium text-slate-900">{idea.category || 'N/A'}</p>
             </div>
             <div>
-              <p className="text-sm text-slate-600 mb-1">Discovered</p>
+              <p className="text-sm text-slate-600 mb-1">发现时间</p>
               <p className="text-sm font-medium text-slate-900">{formatDate(idea.discoveredAt)}</p>
             </div>
             {idea.analyzedAt && (
               <div>
-                <p className="text-sm text-slate-600 mb-1">Analyzed</p>
+                <p className="text-sm text-slate-600 mb-1">分析时间</p>
                 <p className="text-sm font-medium text-slate-900">{formatDate(idea.analyzedAt)}</p>
               </div>
             )}
             {idea.analysis?.confidence !== undefined && (
               <div>
-                <p className="text-sm text-slate-600 mb-1">Confidence</p>
+                <p className="text-sm text-slate-600 mb-1">置信度</p>
                 <p className="text-sm font-medium text-slate-900">{idea.analysis.confidence}%</p>
               </div>
             )}

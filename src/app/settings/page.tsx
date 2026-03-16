@@ -125,10 +125,10 @@ export default function SettingsPage() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ settings: flat }),
       });
-      alert('Settings saved successfully!');
+      alert('设置保存成功！');
     } catch (error) {
       console.error('Failed to save settings:', error);
-      alert('Failed to save settings');
+      alert('保存设置失败');
     } finally {
       setSaving(false);
     }
@@ -138,7 +138,7 @@ export default function SettingsPage() {
     return (
       <div className="p-8">
         <div className="flex items-center justify-center h-64">
-          <p className="text-slate-500">Loading settings...</p>
+          <p className="text-slate-500">加载设置中...</p>
         </div>
       </div>
     );
@@ -148,7 +148,7 @@ export default function SettingsPage() {
     return (
       <div className="p-8">
         <div className="text-center py-12">
-          <p className="text-slate-500">Failed to load settings</p>
+          <p className="text-slate-500">加载设置失败</p>
         </div>
       </div>
     );
@@ -157,22 +157,22 @@ export default function SettingsPage() {
   return (
     <div className="p-8">
       <div className="mb-8">
-        <h1 className="text-3xl font-bold text-slate-900 mb-2">Settings</h1>
-        <p className="text-slate-600">Configure your IdeaRadar instance</p>
+        <h1 className="text-3xl font-bold text-slate-900 mb-2">设置</h1>
+        <p className="text-slate-600">配置你的 IdeaRadar 实例</p>
       </div>
 
       {/* AI Model Configuration */}
       <Card className="mb-6">
         <CardHeader>
-          <CardTitle>AI Model Configuration</CardTitle>
+          <CardTitle>AI 模型配置</CardTitle>
         </CardHeader>
         <CardContent className="space-y-6">
           {/* Screening Model */}
           <div>
-            <h3 className="text-sm font-semibold text-slate-700 mb-3">Screening Model</h3>
+            <h3 className="text-sm font-semibold text-slate-700 mb-3">初筛模型</h3>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               <div>
-                <label className="block text-sm text-slate-600 mb-1">Provider</label>
+                <label className="block text-sm text-slate-600 mb-1">服务商</label>
                 <Select
                   value={settings.aiConfig.screeningModel.provider}
                   onChange={(e) =>
@@ -196,7 +196,7 @@ export default function SettingsPage() {
                 </Select>
               </div>
               <div>
-                <label className="block text-sm text-slate-600 mb-1">Model Name</label>
+                <label className="block text-sm text-slate-600 mb-1">模型名称</label>
                 <Input
                   value={settings.aiConfig.screeningModel.model}
                   onChange={(e) =>
@@ -214,7 +214,7 @@ export default function SettingsPage() {
                 />
               </div>
               <div>
-                <label className="block text-sm text-slate-600 mb-1">API Key</label>
+                <label className="block text-sm text-slate-600 mb-1">API 密钥</label>
                 <Input
                   type="password"
                   value={settings.aiConfig.screeningModel.apiKey}
@@ -237,10 +237,10 @@ export default function SettingsPage() {
 
           {/* Analysis Model */}
           <div>
-            <h3 className="text-sm font-semibold text-slate-700 mb-3">Analysis Model</h3>
+            <h3 className="text-sm font-semibold text-slate-700 mb-3">深度分析模型</h3>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               <div>
-                <label className="block text-sm text-slate-600 mb-1">Provider</label>
+                <label className="block text-sm text-slate-600 mb-1">服务商</label>
                 <Select
                   value={settings.aiConfig.analysisModel.provider}
                   onChange={(e) =>
@@ -264,7 +264,7 @@ export default function SettingsPage() {
                 </Select>
               </div>
               <div>
-                <label className="block text-sm text-slate-600 mb-1">Model Name</label>
+                <label className="block text-sm text-slate-600 mb-1">模型名称</label>
                 <Input
                   value={settings.aiConfig.analysisModel.model}
                   onChange={(e) =>
@@ -282,7 +282,7 @@ export default function SettingsPage() {
                 />
               </div>
               <div>
-                <label className="block text-sm text-slate-600 mb-1">API Key</label>
+                <label className="block text-sm text-slate-600 mb-1">API 密钥</label>
                 <Input
                   type="password"
                   value={settings.aiConfig.analysisModel.apiKey}
@@ -306,7 +306,7 @@ export default function SettingsPage() {
           {/* Temperature & Budget */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
-              <label className="block text-sm text-slate-600 mb-1">Temperature (0-1)</label>
+              <label className="block text-sm text-slate-600 mb-1">温度 (0-1)</label>
               <Input
                 type="number"
                 step="0.1"
@@ -325,7 +325,7 @@ export default function SettingsPage() {
               />
             </div>
             <div>
-              <label className="block text-sm text-slate-600 mb-1">Daily Budget ($)</label>
+              <label className="block text-sm text-slate-600 mb-1">每日预算 ($)</label>
               <Input
                 type="number"
                 step="1"
@@ -349,7 +349,7 @@ export default function SettingsPage() {
       {/* Data Sources */}
       <Card className="mb-6">
         <CardHeader>
-          <CardTitle>Data Sources</CardTitle>
+          <CardTitle>数据源</CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="flex items-center justify-between">
@@ -393,7 +393,7 @@ export default function SettingsPage() {
             </div>
             {settings.dataSources.producthunt.enabled && (
               <div>
-                <label className="block text-sm text-slate-600 mb-1">API Token</label>
+                <label className="block text-sm text-slate-600 mb-1">API 令牌</label>
                 <Input
                   type="password"
                   value={settings.dataSources.producthunt.apiToken}
@@ -437,11 +437,11 @@ export default function SettingsPage() {
       {/* Scheduler */}
       <Card className="mb-6">
         <CardHeader>
-          <CardTitle>Scheduler</CardTitle>
+          <CardTitle>定时任务</CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
           <div>
-            <label className="block text-sm text-slate-600 mb-1">Collection Interval</label>
+            <label className="block text-sm text-slate-600 mb-1">采集频率</label>
             <Select
               value={settings.scheduler.collectionInterval}
               onChange={(e) =>
@@ -454,15 +454,15 @@ export default function SettingsPage() {
                 })
               }
             >
-              <option value="0 */6 * * *">Every 6 hours</option>
-              <option value="0 */12 * * *">Every 12 hours</option>
-              <option value="0 0 * * *">Daily</option>
-              <option value="0 0 */2 * *">Every 2 days</option>
+              <option value="0 */6 * * *">每 6 小时</option>
+              <option value="0 */12 * * *">每 12 小时</option>
+              <option value="0 0 * * *">每天</option>
+              <option value="0 0 */2 * *">每 2 天</option>
             </Select>
           </div>
 
           <div>
-            <label className="block text-sm text-slate-600 mb-1">Analysis Interval</label>
+            <label className="block text-sm text-slate-600 mb-1">分析频率</label>
             <Select
               value={settings.scheduler.analysisInterval}
               onChange={(e) =>
@@ -475,10 +475,10 @@ export default function SettingsPage() {
                 })
               }
             >
-              <option value="0 */6 * * *">Every 6 hours</option>
-              <option value="0 */12 * * *">Every 12 hours</option>
-              <option value="0 0 * * *">Daily</option>
-              <option value="0 0 */2 * *">Every 2 days</option>
+              <option value="0 */6 * * *">每 6 小时</option>
+              <option value="0 */12 * * *">每 12 小时</option>
+              <option value="0 0 * * *">每天</option>
+              <option value="0 0 */2 * *">每 2 天</option>
             </Select>
           </div>
         </CardContent>
@@ -487,7 +487,7 @@ export default function SettingsPage() {
       {/* Save Button */}
       <div className="flex justify-end">
         <Button onClick={handleSave} disabled={saving} size="lg">
-          {saving ? 'Saving...' : 'Save Settings'}
+          {saving ? '保存中...' : '保存设置'}
         </Button>
       </div>
     </div>

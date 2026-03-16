@@ -40,7 +40,7 @@ export function RecentIdeas({ ideas }: RecentIdeasProps) {
   return (
     <Card>
       <CardHeader>
-        <CardTitle>Recent Top Ideas</CardTitle>
+        <CardTitle>近期热门创意</CardTitle>
       </CardHeader>
       <CardContent>
         <div className="space-y-3">
