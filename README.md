@@ -34,7 +34,7 @@ Create a `.env` file in the project root:
 ```env
 # AI Provider (at least one API key is required for analysis)
 AI_GATEWAY_API_KEY=your_api_key_here
-AI_GATEWAY_URL=https://api.openrouter.ai/api/v1
+AI_GATEWAY_URL=https://api.openrouter.ai/api/v1  # Base URL or full endpoint (auto-detected)
 
 # Optional: override default models
 AI_SCREENING_MODEL=anthropic/claude-haiku-4.5

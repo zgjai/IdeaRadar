@@ -55,7 +55,11 @@ export class AIProvider {
     analysisType?: string
   ): Promise<{ content: string; usage: TokenUsage }> {
     const baseUrl = this.config.baseUrl || 'https://ai-gateway.happycapy.ai/api/v1';
-    const endpoint = `${baseUrl}/chat/completions`;
+    // If baseUrl already ends with /chat/completions, use it directly;
+    // otherwise append the path. This handles users who set the full endpoint URL.
+    const endpoint = baseUrl.endsWith('/chat/completions')
+      ? baseUrl
+      : `${baseUrl.replace(/\/+$/, '')}/chat/completions`;
 
     const requestBody = {
       model: this.config.model,
