@@ -68,6 +68,8 @@ export class AIProvider {
       max_tokens: this.config.maxTokens ?? 4096,
     };
 
+    console.log(`[AI] Requesting: ${endpoint} | model=${this.config.model} | apiKey=${this.config.apiKey ? '***' + this.config.apiKey.slice(-6) : 'MISSING'}`);
+
     try {
       const response = await axios.post<OpenAICompatibleResponse>(endpoint, requestBody, {
         headers: {
@@ -112,8 +114,11 @@ export class AIProvider {
       return { content, usage };
     } catch (error) {
       if (axios.isAxiosError(error)) {
-        const message = error.response?.data?.error?.message || error.message;
-        throw new Error(`AI API Error: ${message}`);
+        const status = error.response?.status;
+        const respData = error.response?.data;
+        const message = respData?.error?.message || respData?.message || error.message;
+        console.error(`[AI] Error ${status} for model=${this.config.model}:`, JSON.stringify(respData ?? {}).slice(0, 500));
+        throw new Error(`AI API Error (${status}): ${message}`);
       }
       throw error;
     }
