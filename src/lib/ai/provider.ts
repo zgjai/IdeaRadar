@@ -55,11 +55,7 @@ export class AIProvider {
     analysisType?: string
   ): Promise<{ content: string; usage: TokenUsage }> {
     const baseUrl = this.config.baseUrl || 'https://ai-gateway.happycapy.ai/api/v1';
-    // If baseUrl already ends with /chat/completions, use it directly;
-    // otherwise append the path. This handles users who set the full endpoint URL.
-    const endpoint = baseUrl.endsWith('/chat/completions')
-      ? baseUrl
-      : `${baseUrl.replace(/\/+$/, '')}/chat/completions`;
+    const endpoint = `${baseUrl.replace(/\/+$/, '')}/chat/completions`;
 
     const requestBody = {
       model: this.config.model,
@@ -155,11 +151,19 @@ export async function createAIProvider(type: 'screening' | 'analysis'): Promise<
   return new AIProvider(config);
 }
 
+// Normalize base URL: strip /chat/completions suffix so we store only the base
+function normalizeBaseUrl(url: string): string {
+  return url.replace(/\/chat\/completions\/?$/, '').replace(/\/+$/, '');
+}
+
 // Get AI config from database settings or environment
 async function getAIConfig(type: 'screening' | 'analysis'): Promise<AIProviderConfig> {
   const prefix = `ai.${type}`;
   const envApiKey = process.env.AI_GATEWAY_API_KEY || process.env.OPENAI_API_KEY || process.env.ANTHROPIC_API_KEY || '';
-  const envBaseUrl = process.env.AI_GATEWAY_URL || 'https://ai-gateway.happycapy.ai/api/v1';
+  const rawEnvUrl = process.env.AI_GATEWAY_URL || '';
+  const envBaseUrl = rawEnvUrl ? normalizeBaseUrl(rawEnvUrl) : 'https://ai-gateway.happycapy.ai/api/v1';
+
+  console.log(`[AI] getAIConfig(${type}): AI_GATEWAY_URL=${rawEnvUrl || '(not set)'} -> baseUrl=${envBaseUrl}`);
 
   const defaults: AIProviderConfig = type === 'screening'
     ? {
@@ -198,7 +202,7 @@ async function getAIConfig(type: 'screening' | 'analysis'): Promise<AIProviderCo
         provider: (dbConfig.provider || defaults.provider) as AIProviderConfig['provider'],
         model: dbConfig.model || defaults.model,
         apiKey: dbConfig.apiKey || defaults.apiKey,
-        baseUrl: dbConfig.baseUrl || defaults.baseUrl,
+        baseUrl: dbConfig.baseUrl ? normalizeBaseUrl(dbConfig.baseUrl) : defaults.baseUrl,
         temperature: dbConfig.temperature ? parseFloat(dbConfig.temperature) : defaults.temperature,
         maxTokens: dbConfig.maxTokens ? parseInt(dbConfig.maxTokens) : defaults.maxTokens,
       };
