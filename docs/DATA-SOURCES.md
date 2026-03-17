@@ -2,7 +2,10 @@
 
 ## Overview
 
-IdeaRadar collects product ideas from multiple internet sources through a pluggable collector architecture. Each collector implements a common interface and runs independently.
+IdeaRadar uses two categories of external data sources:
+
+1. **Idea Collectors** - Collect raw product ideas from community platforms (Hacker News, Product Hunt)
+2. **SEO APIs (V2)** - Enrich ideas with keyword data, SERP analysis, and competitor intelligence (DataForSEO, SerpAPI)
 
 ## Collector Architecture
 
@@ -201,6 +204,80 @@ function calculateTrendScore(idea: Idea): number {
 
 Add a toggle in `src/app/settings/page.tsx` following the existing pattern for hackernews/producthunt.
 
+## SEO APIs (V2)
+
+### DataForSEO
+
+**Status:** Active (requires account)
+
+**Source file:** `src/lib/api/dataforseo.ts`
+
+**API:** DataForSEO REST API (`https://api.dataforseo.com/v3`)
+
+#### Capabilities
+
+| Method | Endpoint | Cost | Description |
+|--------|----------|------|-------------|
+| `getKeywordData()` | Keywords Data | ~$0.0003/keyword | Batch keyword metrics (volume, difficulty, CPC) |
+| `getRelatedKeywords()` | Related Keywords | ~$0.001/request | Expand seed keywords |
+| `getSerpResults()` | SERP | ~$0.005/query | Search result analysis |
+
+#### Authentication
+
+HTTP Basic Auth with login (email) and password.
+
+#### Configuration
+
+```env
+DATAFORSEO_LOGIN=your@email.com
+DATAFORSEO_PASSWORD=your_password
+```
+
+Settings keys: `seo.dataforseo.login`, `seo.dataforseo.password`
+
+#### Getting an Account
+
+1. Register at [dataforseo.com](https://dataforseo.com)
+2. Free tier includes $1 credit for testing
+3. Pay-as-you-go pricing after that
+
+### SerpAPI
+
+**Status:** Active (requires API key, used as fallback)
+
+**Source file:** `src/lib/api/serpapi.ts`
+
+**API:** SerpAPI (`https://serpapi.com/search`)
+
+#### Capabilities
+
+| Method | Cost | Description |
+|--------|------|-------------|
+| `search()` | $0.01/search | Google SERP results with organic results, PAA, related searches, SERP features |
+
+#### Configuration
+
+```env
+SERPAPI_KEY=your_serpapi_key
+```
+
+Settings key: `seo.serpapi.apiKey`
+
+#### Getting an API Key
+
+1. Register at [serpapi.com](https://serpapi.com)
+2. Free tier: 100 searches/month
+3. Paid plans start at $50/month
+
+### Graceful Degradation
+
+The V2 pipeline works without any SEO APIs configured:
+- Keyword extraction still works (uses title/category-based seeds only)
+- SERP analysis and competitor discovery are skipped
+- AI analysis runs with reduced context (lower confidence)
+
+When only one API is configured, the system uses it as the primary source. When both are configured, DataForSEO is preferred for keywords and SerpAPI is used as fallback for SERP data.
+
 ## Collection Logs
 
 Every collection run is logged to `collection_logs`:
@@ -215,3 +292,16 @@ Every collection run is logged to `collection_logs`:
 | `completed_at` | Collection end timestamp |
 
 These logs power the "Sources Online" indicator on the Dashboard -- a source is considered online if it had a successful collection within the last 24 hours.
+
+## API Cost Tracking (V2)
+
+SEO API calls are tracked in the `api_cost_logs` table:
+
+| Field | Description |
+|-------|-------------|
+| `api_name` | API identifier (`dataforseo`, `serpapi`) |
+| `endpoint` | Specific endpoint called |
+| `cost_usd` | Estimated cost of the call |
+| `created_at` | Timestamp |
+
+This data powers the Budget page and cost monitoring on the Dashboard.

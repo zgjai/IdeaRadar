@@ -1,9 +1,19 @@
 # IdeaRadar
 
-AI-powered product idea discovery and analysis platform. Automatically collects product ideas from multiple internet sources, analyzes them with configurable AI models, and outputs reliability rankings to help indie developers identify high-potential opportunities.
+AI-powered business opportunity verification engine. Automatically collects product ideas from multiple internet sources, validates them through SEO data, competitor analysis, and monetization assessment, then produces actionable opportunity scores to help indie developers make data-driven build-or-skip decisions.
 
 ## Features
 
+### V2 - Business Opportunity Verification
+- **SEO-Validated Scoring** - Traffic(40%) x Monetization(35%) x Execution(25%) weighted geometric mean
+- **4-Stage AI Pipeline** - SEO Analysis -> Competitor Analysis -> Monetization Analysis -> Recommendation
+- **Keyword Intelligence** - Automated keyword extraction, expansion, and SEO metrics enrichment
+- **Competitor Discovery** - SERP-based competitor detection with monetization signal analysis
+- **Budget Control** - Daily/monthly/per-API spending limits with real-time monitoring
+- **Multi-Layer Cache** - Memory LRU + SQLite cache to minimize API costs
+- **Opportunity Lifecycle** - discovered -> screening -> seo_validated -> analyzed -> actionable -> archived
+
+### V1 - Idea Discovery Foundation
 - **Multi-Source Data Collection** - Hacker News, Product Hunt, Google Trends (extensible)
 - **Two-Stage AI Analysis** - Fast screening + deep analysis with configurable models
 - **5-Dimension Scoring** - Trend, Demand, Competition, Feasibility, Growth
@@ -40,6 +50,11 @@ AI_GATEWAY_URL=https://api.openrouter.ai/api/v1  # Base URL or full endpoint (au
 AI_SCREENING_MODEL=anthropic/claude-haiku-4.5
 AI_ANALYSIS_MODEL=anthropic/claude-sonnet-4.6
 
+# Optional: SEO APIs (V2 - for keyword and competitor analysis)
+DATAFORSEO_LOGIN=your_dataforseo_login
+DATAFORSEO_PASSWORD=your_dataforseo_password
+SERPAPI_KEY=your_serpapi_key
+
 # Optional: Product Hunt API
 PRODUCTHUNT_TOKEN=your_producthunt_token
 
@@ -63,9 +78,11 @@ Open [http://localhost:3000](http://localhost:3000) in your browser.
 ### Usage Workflow
 
 1. **Collect** - Click "Collect Data" on Dashboard or wait for scheduled collection
-2. **Analyze** - Click "Run Analysis" to trigger AI analysis on collected ideas
-3. **Review** - Browse Ideas list sorted by score, filter by rank/source/category
-4. **Dive Deep** - Click into individual ideas for radar charts and detailed breakdowns
+2. **Screen** - Click "Run Analysis" to trigger V1 AI screening on collected ideas
+3. **V2 Deep Analysis** - Click "V2 Deep Analysis" for full SEO + competitor + monetization pipeline
+4. **Review** - Browse Ideas list sorted by opportunity score, filter by rank/source/category
+5. **Keywords** - Explore keyword data in the Keywords Browser page
+6. **Dive Deep** - Click into individual ideas for V2 opportunity scores, SEO data, and AI recommendations
 
 ## Tech Stack
 
@@ -90,9 +107,13 @@ src/
       ideas/                # Ideas CRUD
       stats/                # Dashboard statistics
       collect/              # Trigger data collection
-      analyze/              # Trigger AI analysis
+      analyze/              # V1 AI analysis
+      analyze-v2/           # V2 full pipeline analysis (SEO + competitors + AI)
+      keywords/             # Keyword browsing API
+      budget/               # Budget monitoring API
       settings/             # Configuration CRUD
     ideas/                  # Ideas list & detail pages
+    keywords/               # Keyword browser page
     settings/               # Settings page
   components/               # React components
     ui/                     # Reusable UI primitives
@@ -100,9 +121,14 @@ src/
     ideas/                  # Ideas page components
     charts/                 # Recharts visualizations
   lib/                      # Core business logic
-    ai/                     # AI provider, analyzer, prompts
+    ai/                     # AI provider, analyzer, prompts, V2 pipeline
+    api/                    # External API clients (DataForSEO, SerpAPI)
+    budget/                 # Budget management and enforcement
+    cache/                  # Multi-layer cache (Memory LRU + SQLite)
     collectors/             # Data source collectors
-    scoring/                # Scoring engine
+    competitors/            # Competitor discovery and monetization signals
+    keywords/               # Keyword extraction, expansion, enrichment pipeline
+    scoring/                # Scoring engine (V1 + V2)
     scheduler/              # Cron job scheduler
     db/                     # Database schema & connection
     config.ts               # Environment configuration

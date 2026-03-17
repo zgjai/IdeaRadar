@@ -296,6 +296,144 @@ All values must be strings.
 
 ---
 
+## V2 Analysis
+
+### POST /api/analyze-v2
+
+Run the full V2 analysis pipeline (keywords + competitors + monetization + AI 4-stage analysis).
+
+**Request Body (single idea):**
+
+```json
+{
+  "ideaId": "abc123"
+}
+```
+
+**Request Body (batch mode):**
+
+```json
+{
+  "mode": "batch",
+  "limit": 5
+}
+```
+
+| Parameter | Type | Default | Description |
+|-----------|------|---------|-------------|
+| `ideaId` | string | - | Analyze a specific idea |
+| `mode` | string | - | Set to `"batch"` for batch processing |
+| `limit` | number | 5 | Max ideas to process in batch (max 20) |
+
+**Response (single):**
+
+```json
+{
+  "success": true,
+  "ideaId": "abc123",
+  "ideaTitle": "AI Code Review Tool",
+  "duration": 45000,
+  "keywords": { "seeds": 5, "expanded": 25, "enriched": 20, "saved": 18 },
+  "competitorCount": 8,
+  "analysis": {
+    "trafficScore": 72,
+    "monetizationScore": 68,
+    "executionScore": 75,
+    "opportunityScore": 71.5,
+    "verdict": "go"
+  }
+}
+```
+
+**What happens:**
+1. Keyword extraction + SEO data enrichment via DataForSEO
+2. Competitor discovery from SERP results
+3. Monetization signal detection on top 10 competitor domains
+4. AI 4-stage analysis (SEO -> Competitor -> Monetization -> Recommendation)
+5. Score update with opportunityScore (weighted geometric mean)
+
+**Note:** This endpoint has `maxDuration: 300` (5 minutes) as the full pipeline can take significant time.
+
+---
+
+## Keywords
+
+### GET /api/keywords
+
+List keywords with pagination, sorting, and filtering.
+
+**Query Parameters:**
+
+| Parameter | Type | Default | Description |
+|-----------|------|---------|-------------|
+| `page` | number | 1 | Page number |
+| `limit` | number | 50 | Items per page (max 200) |
+| `sort` | string | `search_volume` | Sort field: `search_volume`, `difficulty`, `cpc`, `keyword` |
+| `order` | string | `desc` | Sort order: `asc` or `desc` |
+| `search` | string | - | Search keyword text |
+| `minVolume` | number | 0 | Minimum search volume filter |
+| `maxDifficulty` | number | 100 | Maximum difficulty filter |
+| `ideaId` | string | - | Filter keywords linked to a specific idea |
+
+**Response:**
+
+```json
+{
+  "keywords": [
+    {
+      "id": 1,
+      "keyword": "ai code review",
+      "searchVolume": 12000,
+      "difficulty": 45.2,
+      "cpc": 3.50,
+      "clusterId": null,
+      "dataSource": "dataforseo",
+      "lastUpdated": "2025-03-15T10:00:00.000Z"
+    }
+  ],
+  "pagination": {
+    "page": 1,
+    "limit": 50,
+    "total": 234,
+    "totalPages": 5
+  }
+}
+```
+
+---
+
+## Budget
+
+### GET /api/budget
+
+Get budget overview with daily/monthly spend and per-API breakdown.
+
+**Response:**
+
+```json
+{
+  "daily": {
+    "spent": 1.25,
+    "limit": 5,
+    "remaining": 3.75,
+    "percentage": 25
+  },
+  "monthly": {
+    "spent": 18.50,
+    "limit": 100,
+    "remaining": 81.50,
+    "percentage": 18.5
+  },
+  "byApi": {
+    "dataforseo": { "spent": 5.20, "limit": 30 },
+    "serpapi": { "spent": 3.10, "limit": 30 },
+    "ai": { "spent": 10.20, "limit": 50 }
+  }
+}
+```
+
+---
+
 ## Error Response Format
 
 All endpoints return errors in this format:

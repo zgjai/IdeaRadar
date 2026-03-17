@@ -2,7 +2,7 @@
 
 ## Overview
 
-IdeaRadar uses a two-stage AI pipeline to evaluate product ideas. The system is provider-agnostic -- any OpenAI-compatible chat completions endpoint works.
+IdeaRadar uses a multi-stage AI pipeline to evaluate product ideas. The V1 pipeline performs screening and deep analysis, while the V2 pipeline adds SEO-validated 4-stage analysis with competitor and monetization assessment. The system is provider-agnostic -- any OpenAI-compatible chat completions endpoint works.
 
 ## Architecture
 
@@ -190,9 +190,104 @@ Built-in pricing table (per 1M tokens):
 
 Screening uses batch processing with configurable concurrency (default: 3 concurrent). Deep analysis runs sequentially with a 2-second delay between calls to respect rate limits.
 
+## V2 Analysis Pipeline (4-Stage)
+
+**Source file:** `src/lib/ai/pipeline-v2.ts`
+
+The V2 pipeline runs after keyword and competitor data has been collected. It performs 4 sequential AI analysis stages, each building on the context from previous stages.
+
+### Context Assembly
+
+Before running AI stages, `buildContext()` assembles all available data:
+- Idea title, description, source metrics
+- Keywords with SEO metrics (search volume, difficulty, CPC)
+- SERP snapshots (top ranking pages, SERP features)
+- Competitor data (domains, traffic estimates)
+- Monetization signals (pricing pages, ads, affiliate indicators)
+
+### Stage 1: SEO Analysis
+
+**Prompt:** Analyze traffic acquisition potential based on keyword data and SERP landscape.
+
+**Output:**
+```json
+{
+  "trafficScore": 72,
+  "keywordStrategy": "Long-tail focus on 'ai code review for teams'",
+  "contentPlan": "Technical blog posts targeting comparison keywords",
+  "serpOpportunity": "Low competition for informational queries"
+}
+```
+
+### Stage 2: Competitor Analysis
+
+**Prompt:** Evaluate market structure and competitive intensity.
+
+**Output:**
+```json
+{
+  "competitionIntensity": 65,
+  "topCompetitors": ["CodeRabbit", "Codacy"],
+  "marketGaps": "No competitor focuses on team-level workflow",
+  "differentiationAngle": "AI-native with natural language feedback"
+}
+```
+
+### Stage 3: Monetization Analysis
+
+**Prompt:** Assess revenue model viability based on competitor signals.
+
+**Output:**
+```json
+{
+  "monetizationScore": 68,
+  "recommendedModel": "freemium SaaS with team pricing",
+  "pricingRange": "$15-49/user/month",
+  "revenueTimeline": "6-12 months to first revenue"
+}
+```
+
+### Stage 4: Recommendation
+
+**Prompt:** Synthesize all analyses into an actionable recommendation.
+
+**Output:**
+```json
+{
+  "verdict": "go",
+  "productForm": "VS Code extension + web dashboard",
+  "mvpFeatures": ["PR review", "security scanning", "style checks"],
+  "trafficStrategy": "Content marketing targeting comparison keywords",
+  "monetizationPath": "Free tier -> team plan at $29/user/month",
+  "risks": ["OpenAI dependency", "Enterprise sales cycle"],
+  "reasoning": "Strong keyword opportunity with viable monetization..."
+}
+```
+
+Verdict values: `strong_go`, `go`, `cautious`, `skip`
+
+### Opportunity Score Calculation
+
+After all 4 stages complete, the opportunity score is calculated using a **weighted geometric mean**:
+
+```
+opportunityScore = (traffic/100)^0.4 × (monetization/100)^0.35 × (execution/100)^0.25 × 100
+```
+
+This multiplication model ensures all three dimensions must be viable -- a zero in any dimension produces a low overall score.
+
+### Graceful Degradation
+
+If any AI stage fails:
+- Default scores (50) are used for the failed stage
+- The pipeline continues with remaining stages
+- Results are still saved with whatever data was obtained
+
 ## Prompt Engineering
 
-Prompts are defined in `src/lib/ai/prompts.ts`. Both prompts:
+### V1 Prompts
+
+Prompts are defined in `src/lib/ai/prompts.ts`. Both V1 prompts:
 
 - Request **JSON-only output** to enable reliable parsing
 - Include **scoring guidelines** to ensure consistent evaluation
@@ -202,3 +297,12 @@ Prompts are defined in `src/lib/ai/prompts.ts`. Both prompts:
 The JSON parser (`parseJSON()`) in `analyzer.ts` handles two response formats:
 1. Raw JSON string
 2. JSON wrapped in markdown code blocks (`` ```json ... ``` ``)
+
+### V2 Prompts
+
+V2 prompts are defined inline in `src/lib/ai/pipeline-v2.ts`. They:
+
+- Are written in **Chinese** for consistency with the target user base
+- Include the full assembled context (keywords, SERP data, competitors, signals)
+- Request structured JSON output with specific field names
+- Each stage prompt references results from previous stages for coherent analysis

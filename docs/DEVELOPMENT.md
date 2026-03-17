@@ -54,15 +54,28 @@ Runs at `http://localhost:3000` with hot reload.
 ```
 src/
   app/              # Next.js App Router (pages + API routes)
+    api/
+      analyze/      # V1 AI analysis
+      analyze-v2/   # V2 full pipeline (SEO + competitors + AI)
+      budget/       # Budget monitoring
+      keywords/     # Keyword browsing
+      ...
+    keywords/       # Keyword browser page
+    ...
   components/       # React components
-    ui/             # Design system primitives (Button, Card, Input, etc.)
+    ui/             # Design system primitives (Button, Card, Input, Badge, etc.)
     dashboard/      # Dashboard-specific components
     ideas/          # Ideas page components
     charts/         # Data visualization components
   lib/              # Core business logic (no React)
-    ai/             # AI provider abstraction and analysis
+    ai/             # AI provider, V1 analyzer, V2 pipeline
+    api/            # External API clients (DataForSEO, SerpAPI)
+    budget/         # Budget management and enforcement
+    cache/          # Multi-layer cache (Memory LRU + SQLite)
     collectors/     # Data source collectors
-    scoring/        # Scoring and ranking engine
+    competitors/    # Competitor discovery and monetization signals
+    keywords/       # Keyword extraction, expansion, enrichment
+    scoring/        # Scoring and ranking engine (V1 + V2)
     scheduler/      # Background job scheduler
     db/             # Database connection and schema
 ```
@@ -103,6 +116,10 @@ src/
 
 Tables are created automatically on first access via `CREATE TABLE IF NOT EXISTS` statements in `db/index.ts`. No migration step required for initial setup.
 
+### V2 Migration
+
+V2 schema changes (new columns on `ideas` table, new tables) are applied automatically using safe `ALTER TABLE ADD COLUMN` statements wrapped in try-catch. This means upgrading from V1 to V2 requires no manual migration -- just update the code and restart.
+
 ### Using Drizzle Studio
 
 ```bash
@@ -131,6 +148,8 @@ The `data/` directory is gitignored.
 
 ## Environment Variables
 
+### AI Configuration
+
 | Variable | Required | Default | Description |
 |----------|----------|---------|-------------|
 | `AI_GATEWAY_API_KEY` | Yes* | - | API key for AI provider |
@@ -140,13 +159,26 @@ The `data/` directory is gitignored.
 | `AI_DAILY_BUDGET` | No | `5` | Daily AI spend limit ($) |
 | `OPENAI_API_KEY` | No | - | Fallback API key |
 | `ANTHROPIC_API_KEY` | No | - | Fallback API key |
+
+### SEO APIs (V2)
+
+| Variable | Required | Default | Description |
+|----------|----------|---------|-------------|
+| `DATAFORSEO_LOGIN` | No | - | DataForSEO account email |
+| `DATAFORSEO_PASSWORD` | No | - | DataForSEO account password |
+| `SERPAPI_KEY` | No | - | SerpAPI API key |
+
+### Data Sources & Infrastructure
+
+| Variable | Required | Default | Description |
+|----------|----------|---------|-------------|
 | `PRODUCTHUNT_TOKEN` | No | - | Product Hunt API token |
 | `DATABASE_URL` | No | `./data/idearadar.db` | SQLite database path |
 | `SCHEDULER_AUTO_START` | No | `false` | Auto-start cron jobs |
 | `COLLECT_INTERVAL` | No | `0 */6 * * *` | Collection cron expression |
 | `ANALYZE_INTERVAL` | No | `0 * * * *` | Analysis cron expression |
 
-*At least one API key is required for AI analysis features.
+*At least one AI API key is required for analysis features. SEO API keys are optional but needed for V2 keyword/competitor analysis.
 
 ## Building for Production
 
