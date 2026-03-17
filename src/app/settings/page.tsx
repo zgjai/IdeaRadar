@@ -1,10 +1,12 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import { toast } from 'sonner';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Select } from '@/components/ui/select';
 import { Button } from '@/components/ui/button';
+import { LoadingState } from '@/components/ui/spinner';
 
 interface Settings {
   aiConfig: {
@@ -147,10 +149,10 @@ export default function SettingsPage() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ settings: flat }),
       });
-      alert('设置保存成功！');
+      toast.success('设置保存成功！');
     } catch (error) {
       console.error('Failed to save settings:', error);
-      alert('保存设置失败');
+      toast.error('保存设置失败，请重试');
     } finally {
       setSaving(false);
     }
@@ -159,9 +161,7 @@ export default function SettingsPage() {
   if (loading) {
     return (
       <div className="p-8">
-        <div className="flex items-center justify-center h-64">
-          <p className="text-slate-500">加载设置中...</p>
-        </div>
+        <LoadingState text="加载设置中..." />
       </div>
     );
   }

@@ -174,49 +174,84 @@ export async function enrichKeywords(kwList: string[]): Promise<KeywordData[]> {
 }
 
 /**
- * Save enriched keywords to database
+ * Save enriched keywords to database (batch upsert)
  */
 export async function saveKeywords(data: KeywordData[]): Promise<number> {
-  let saved = 0;
+  if (data.length === 0) return 0;
+
+  const now = new Date().toISOString();
+
+  // Fetch all existing keywords in one query
+  const existingKeywords = data.map((d) => d.keyword);
+  const existingRows = await db.query.keywords.findMany({
+    where: inArray(keywords.keyword, existingKeywords),
+  });
+  const existingMap = new Map(existingRows.map((r) => [r.keyword, r]));
+
+  // Split into updates and inserts
+  const toInsert: Array<typeof keywords.$inferInsert> = [];
+  const toUpdate: Array<{ id: number; values: Partial<typeof keywords.$inferInsert> }> = [];
 
   for (const item of data) {
-    try {
-      // Upsert: check if exists, update or insert
-      const existing = await db.query.keywords.findFirst({
-        where: eq(keywords.keyword, item.keyword),
-      });
-
-      if (existing) {
-        await db
-          .update(keywords)
-          .set({
-            searchVolume: item.searchVolume ?? existing.searchVolume,
-            difficulty: item.difficulty ?? existing.difficulty,
-            cpc: item.cpc ?? existing.cpc,
-            competition: item.competition ?? existing.competition,
-            trend: item.monthlySearches ? JSON.stringify(item.monthlySearches) : existing.trend,
-            intent: item.intent ?? existing.intent,
-            dataSource: 'dataforseo',
-            updatedAt: new Date().toISOString(),
-          })
-          .where(eq(keywords.id, existing.id));
-      } else {
-        await db.insert(keywords).values({
-          keyword: item.keyword,
-          searchVolume: item.searchVolume,
-          difficulty: item.difficulty,
-          cpc: item.cpc,
-          competition: item.competition,
-          trend: item.monthlySearches ? JSON.stringify(item.monthlySearches) : null,
-          intent: item.intent,
+    const existing = existingMap.get(item.keyword);
+    if (existing) {
+      toUpdate.push({
+        id: existing.id,
+        values: {
+          searchVolume: item.searchVolume ?? existing.searchVolume,
+          difficulty: item.difficulty ?? existing.difficulty,
+          cpc: item.cpc ?? existing.cpc,
+          competition: item.competition ?? existing.competition,
+          trend: item.monthlySearches ? JSON.stringify(item.monthlySearches) : existing.trend,
+          intent: item.intent ?? existing.intent,
           dataSource: 'dataforseo',
-          createdAt: new Date().toISOString(),
-          updatedAt: new Date().toISOString(),
-        });
+          updatedAt: now,
+        },
+      });
+    } else {
+      toInsert.push({
+        keyword: item.keyword,
+        searchVolume: item.searchVolume,
+        difficulty: item.difficulty,
+        cpc: item.cpc,
+        competition: item.competition,
+        trend: item.monthlySearches ? JSON.stringify(item.monthlySearches) : null,
+        intent: item.intent,
+        dataSource: 'dataforseo',
+        createdAt: now,
+        updatedAt: now,
+      });
+    }
+  }
+
+  let saved = 0;
+
+  // Batch insert new keywords (chunks of 100 to avoid SQLite limits)
+  for (let i = 0; i < toInsert.length; i += 100) {
+    const batch = toInsert.slice(i, i + 100);
+    try {
+      await db.insert(keywords).values(batch);
+      saved += batch.length;
+    } catch {
+      // Fall back to individual inserts for this batch on conflict
+      for (const item of batch) {
+        try {
+          await db.insert(keywords).values(item);
+          saved++;
+        } catch {
+          // duplicate, skip
+        }
       }
+    }
+  }
+
+  // Batch updates (must be individual due to different values per row)
+  for (const { id, values } of toUpdate) {
+    try {
+      await db.update(keywords).set(values).where(eq(keywords.id, id));
       saved++;
-    } catch (error) {
-      // Likely duplicate, skip
+    } catch {
+      // skip on error
     }
   }
 
@@ -224,23 +259,37 @@ export async function saveKeywords(data: KeywordData[]): Promise<number> {
 }
 
 /**
- * Link keywords to an idea
+ * Link keywords to an idea (batch insert)
  */
 export async function linkKeywordsToIdea(
   ideaId: string,
   kwIds: Array<{ keywordId: number; relevance: number; isPrimary: boolean }>
 ): Promise<void> {
-  for (const { keywordId, relevance, isPrimary } of kwIds) {
+  if (kwIds.length === 0) return;
+
+  const now = new Date().toISOString();
+  const values = kwIds.map(({ keywordId, relevance, isPrimary }) => ({
+    ideaId,
+    keywordId,
+    relevanceScore: relevance,
+    isPrimary,
+    createdAt: now,
+  }));
+
+  // Batch insert in chunks of 100
+  for (let i = 0; i < values.length; i += 100) {
+    const batch = values.slice(i, i + 100);
     try {
-      await db.insert(ideaKeywords).values({
-        ideaId,
-        keywordId,
-        relevanceScore: relevance,
-        isPrimary,
-        createdAt: new Date().toISOString(),
-      });
+      await db.insert(ideaKeywords).values(batch);
     } catch {
-      // Likely duplicate link, skip
+      // Fall back to individual inserts on conflict
+      for (const item of batch) {
+        try {
+          await db.insert(ideaKeywords).values(item);
+        } catch {
+          // duplicate link, skip
+        }
+      }
     }
   }
 }

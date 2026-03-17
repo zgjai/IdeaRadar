@@ -1,11 +1,11 @@
 import type { Metadata } from 'next';
-import { LayoutDashboard, Lightbulb, Settings, Radar, Search, DollarSign } from 'lucide-react';
-import Link from 'next/link';
+import { Toaster } from 'sonner';
 import './globals.css';
+import { Sidebar } from '@/components/layout/sidebar';
 
 export const metadata: Metadata = {
-  title: 'IdeaRadar - AI驱动的产品创意发现平台',
-  description: '从互联网多渠道发现并分析产品创意',
+  title: 'IdeaRadar - AI驱动的商业机会验证引擎',
+  description: '从互联网多渠道发现并验证产品创意的商业可行性',
 };
 
 export default function RootLayout({
@@ -17,62 +17,12 @@ export default function RootLayout({
     <html lang="zh-CN">
       <body className="bg-slate-50">
         <div className="flex min-h-screen">
-          {/* Sidebar */}
-          <aside className="w-64 bg-white border-r border-slate-200 flex flex-col">
-            <div className="p-6 border-b border-slate-200">
-              <Link href="/" className="flex items-center gap-2 text-xl font-bold text-slate-900">
-                <Radar className="w-6 h-6 text-blue-600" />
-                IdeaRadar
-              </Link>
-            </div>
-
-            <nav className="flex-1 p-4">
-              <ul className="space-y-2">
-                <li>
-                  <Link
-                    href="/"
-                    className="flex items-center gap-3 px-4 py-3 text-slate-700 hover:bg-slate-100 rounded-lg transition-colors"
-                  >
-                    <LayoutDashboard className="w-5 h-5" />
-                    仪表盘
-                  </Link>
-                </li>
-                <li>
-                  <Link
-                    href="/ideas"
-                    className="flex items-center gap-3 px-4 py-3 text-slate-700 hover:bg-slate-100 rounded-lg transition-colors"
-                  >
-                    <Lightbulb className="w-5 h-5" />
-                    创意库
-                  </Link>
-                </li>
-                <li>
-                  <Link
-                    href="/keywords"
-                    className="flex items-center gap-3 px-4 py-3 text-slate-700 hover:bg-slate-100 rounded-lg transition-colors"
-                  >
-                    <Search className="w-5 h-5" />
-                    关键词
-                  </Link>
-                </li>
-                <li>
-                  <Link
-                    href="/settings"
-                    className="flex items-center gap-3 px-4 py-3 text-slate-700 hover:bg-slate-100 rounded-lg transition-colors"
-                  >
-                    <Settings className="w-5 h-5" />
-                    设置
-                  </Link>
-                </li>
-              </ul>
-            </nav>
-          </aside>
-
-          {/* Main Content */}
-          <main className="flex-1 overflow-auto">
+          <Sidebar />
+          <main className="flex-1 overflow-auto lg:ml-64">
             {children}
           </main>
         </div>
+        <Toaster position="top-right" richColors closeButton />
       </body>
     </html>
   );

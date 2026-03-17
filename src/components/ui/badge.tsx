@@ -9,22 +9,22 @@ interface BadgeProps {
 
 export function Badge({ className, variant = 'default', children }: BadgeProps) {
   const variants = {
-    default: 'bg-blue-100 text-blue-800',
+    default: 'bg-blue-100 text-blue-900',
     secondary: 'bg-slate-100 text-slate-800',
-    destructive: 'bg-red-100 text-red-800',
+    destructive: 'bg-red-100 text-red-900',
     outline: 'border border-slate-300 text-slate-700',
-    success: 'bg-green-100 text-green-800',
-    warning: 'bg-yellow-100 text-yellow-800',
-    green: 'bg-green-100 text-green-700',
-    yellow: 'bg-yellow-100 text-yellow-700',
-    red: 'bg-red-100 text-red-700',
-    blue: 'bg-blue-100 text-blue-700',
-    purple: 'bg-purple-100 text-purple-700',
-    'rank-s': 'bg-red-100 text-red-700 font-semibold',
-    'rank-a': 'bg-orange-100 text-orange-700 font-semibold',
-    'rank-b': 'bg-yellow-100 text-yellow-700 font-semibold',
-    'rank-c': 'bg-blue-100 text-blue-700 font-semibold',
-    'rank-d': 'bg-gray-100 text-gray-700 font-semibold',
+    success: 'bg-green-100 text-green-900',
+    warning: 'bg-yellow-100 text-yellow-900',
+    green: 'bg-green-100 text-green-900',
+    yellow: 'bg-yellow-100 text-yellow-900',
+    red: 'bg-red-100 text-red-900',
+    blue: 'bg-blue-100 text-blue-900',
+    purple: 'bg-purple-100 text-purple-900',
+    'rank-s': 'bg-gradient-to-r from-amber-400 to-amber-600 text-white font-bold shadow-sm',
+    'rank-a': 'bg-gradient-to-r from-blue-400 to-blue-600 text-white font-bold',
+    'rank-b': 'bg-gradient-to-r from-green-400 to-green-600 text-white font-semibold',
+    'rank-c': 'bg-slate-200 text-slate-700 font-semibold',
+    'rank-d': 'bg-slate-100 text-slate-500 font-medium',
   };
 
   return (

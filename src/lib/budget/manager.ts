@@ -199,7 +199,25 @@ export async function getBudgetOverview(): Promise<{
 }
 
 /**
- * Wrapper: execute an API call only if budget allows
+ * Record a cost reservation into apiCostLogs
+ */
+async function recordApiCost(apiName: string, costUsd: number): Promise<void> {
+  try {
+    await db.insert(apiCostLogs).values({
+      apiName,
+      endpoint: 'budget-reserved',
+      costUsd,
+      createdAt: new Date().toISOString(),
+    });
+  } catch {
+    console.warn(`[Budget] Failed to record cost for ${apiName}`);
+  }
+}
+
+/**
+ * Wrapper: execute an API call only if budget allows.
+ * Records the estimated cost immediately to prevent race conditions
+ * from concurrent requests exceeding the budget.
  */
 export async function withBudgetCheck<T>(
   apiName: string,
@@ -210,5 +228,15 @@ export async function withBudgetCheck<T>(
   if (!budget.allowed) {
     throw new Error(`[Budget] ${budget.reason}`);
   }
-  return fetcher();
+
+  // Reserve the cost immediately to prevent concurrent overruns
+  await recordApiCost(apiName, estimatedCost);
+
+  try {
+    return await fetcher();
+  } catch (error) {
+    // Refund on failure: record negative cost to release the reservation
+    await recordApiCost(apiName, -estimatedCost);
+    throw error;
+  }
 }

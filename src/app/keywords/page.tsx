@@ -5,6 +5,7 @@ import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Select } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
+import { LoadingState } from '@/components/ui/spinner';
 
 interface Keyword {
   id: number;
@@ -159,9 +160,7 @@ export default function KeywordsPage() {
       <Card>
         <CardContent className="p-0">
           {loading ? (
-            <div className="flex items-center justify-center h-64">
-              <p className="text-slate-500">加载中...</p>
-            </div>
+            <LoadingState text="加载关键词数据中..." />
           ) : keywords.length === 0 ? (
             <div className="flex items-center justify-center h-64">
               <div className="text-center">

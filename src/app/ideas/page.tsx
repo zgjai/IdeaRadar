@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { Filters } from '@/components/ideas/filters';
 import { IdeaTable } from '@/components/ideas/idea-table';
+import { LoadingState } from '@/components/ui/spinner';
 import { Button } from '@/components/ui/button';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 
@@ -103,9 +104,7 @@ export default function IdeasPage() {
       />
 
       {loading ? (
-        <div className="flex items-center justify-center h-64">
-          <p className="text-slate-500">加载创意列表中...</p>
-        </div>
+        <LoadingState text="加载创意列表中..." />
       ) : (
         <>
           <IdeaTable ideas={ideas} />

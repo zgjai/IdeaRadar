@@ -1,7 +1,9 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import { toast } from 'sonner';
 import { Lightbulb, Brain, Database, TrendingUp } from 'lucide-react';
+import { LoadingState } from '@/components/ui/spinner';
 import { StatCard } from '@/components/dashboard/stat-card';
 import { RecentIdeas } from '@/components/dashboard/recent-ideas';
 import { Button } from '@/components/ui/button';
@@ -64,11 +66,15 @@ export default function DashboardPage() {
 
   const handleCollect = async () => {
     setCollecting(true);
+    toast.loading('正在采集数据...', { id: 'collect' });
     try {
-      await fetch('/api/collect', { method: 'POST' });
+      const res = await fetch('/api/collect', { method: 'POST' });
+      const data = await res.json().catch(() => ({}));
       await fetchDashboardData();
+      toast.success(`采集完成！${data.newIdeas ? `发现 ${data.newIdeas} 个新创意` : '数据已更新'}`, { id: 'collect' });
     } catch (error) {
       console.error('Failed to collect data:', error);
+      toast.error('采集失败，请检查数据源配置后重试', { id: 'collect' });
     } finally {
       setCollecting(false);
     }
@@ -76,6 +82,7 @@ export default function DashboardPage() {
 
   const handleAnalyze = async () => {
     setAnalyzing(true);
+    toast.loading('正在运行 V1 分析...', { id: 'analyze' });
     try {
       await fetch('/api/analyze', {
         method: 'POST',
@@ -83,8 +90,10 @@ export default function DashboardPage() {
         body: JSON.stringify({ mode: 'all' }),
       });
       await fetchDashboardData();
+      toast.success('V1 分析完成！', { id: 'analyze' });
     } catch (error) {
       console.error('Failed to analyze:', error);
+      toast.error('分析失败，请检查 AI 配置后重试', { id: 'analyze' });
     } finally {
       setAnalyzing(false);
     }
@@ -93,9 +102,7 @@ export default function DashboardPage() {
   if (loading) {
     return (
       <div className="p-8">
-        <div className="flex items-center justify-center h-64">
-          <p className="text-slate-500">加载仪表盘中...</p>
-        </div>
+        <LoadingState text="加载仪表盘中..." />
       </div>
     );
   }
@@ -156,6 +163,7 @@ export default function DashboardPage() {
               variant="default"
               onClick={async () => {
                 setAnalyzingV2(true);
+                toast.loading('正在运行 V2 深度分析（约 30 秒）...', { id: 'analyze-v2' });
                 try {
                   await fetch('/api/analyze-v2', {
                     method: 'POST',
@@ -163,8 +171,10 @@ export default function DashboardPage() {
                     body: JSON.stringify({ mode: 'batch', limit: 5 }),
                   });
                   await fetchDashboardData();
+                  toast.success('V2 深度分析完成！', { id: 'analyze-v2' });
                 } catch (e) {
                   console.error('V2 analysis failed:', e);
+                  toast.error('V2 分析失败，请检查 SEO API 配置', { id: 'analyze-v2' });
                 } finally {
                   setAnalyzingV2(false);
                 }

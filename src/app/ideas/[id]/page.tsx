@@ -2,11 +2,13 @@
 
 import { useEffect, useState } from 'react';
 import { useParams } from 'next/navigation';
+import { toast } from 'sonner';
 import Link from 'next/link';
-import { ArrowLeft, ExternalLink, Calendar, Database, Target, Users } from 'lucide-react';
+import { ArrowLeft, ExternalLink, Target, Users, Lightbulb, Star } from 'lucide-react';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
+import { LoadingState } from '@/components/ui/spinner';
 import { ScoreRadar } from '@/components/charts/score-radar';
 import { TrendLine } from '@/components/charts/trend-line';
 
@@ -59,6 +61,7 @@ export default function IdeaDetailPage() {
   const params = useParams();
   const [idea, setIdea] = useState<IdeaDetail | null>(null);
   const [loading, setLoading] = useState(true);
+  const [runningV2, setRunningV2] = useState(false);
 
   useEffect(() => {
     fetchIdea();
@@ -76,12 +79,35 @@ export default function IdeaDetailPage() {
     }
   };
 
+  const runV2Analysis = async () => {
+    if (!idea) return;
+    setRunningV2(true);
+    toast.loading('正在运行 V2 深度分析（约 30 秒）...', { id: 'v2-analysis' });
+    try {
+      const res = await fetch('/api/analyze-v2', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ ideaId: idea.id }),
+      });
+      if (res.ok) {
+        await fetchIdea();
+        toast.success('V2 深度分析完成！', { id: 'v2-analysis' });
+      } else {
+        const err = await res.json().catch(() => ({}));
+        toast.error(err.error || 'V2 分析失败', { id: 'v2-analysis' });
+      }
+    } catch (e) {
+      console.error(e);
+      toast.error('V2 分析请求失败，请重试', { id: 'v2-analysis' });
+    } finally {
+      setRunningV2(false);
+    }
+  };
+
   if (loading) {
     return (
       <div className="p-8">
-        <div className="flex items-center justify-center h-64">
-          <p className="text-slate-500">加载创意详情中...</p>
-        </div>
+        <LoadingState text="加载创意详情中..." />
       </div>
     );
   }
@@ -173,29 +199,67 @@ export default function IdeaDetailPage() {
                 </Button>
               </a>
             )}
-            {!idea.aiSeoAnalysis && (
-              <Button
-                onClick={async () => {
-                  try {
-                    const res = await fetch('/api/analyze-v2', {
-                      method: 'POST',
-                      headers: { 'Content-Type': 'application/json' },
-                      body: JSON.stringify({ ideaId: idea.id }),
-                    });
-                    if (res.ok) {
-                      fetchIdea(); // refresh
-                    }
-                  } catch (e) {
-                    console.error(e);
-                  }
-                }}
-              >
-                运行 V2 分析
-              </Button>
-            )}
           </div>
         </div>
       </div>
+
+      {/* V2 Analysis - Prominent CTA or Results */}
+      {idea.opportunityScore !== undefined && idea.opportunityScore > 0 ? (
+        <Card className="mb-6 bg-gradient-to-r from-blue-50 to-purple-50 border-2 border-blue-200">
+          <CardContent className="p-8">
+            <div className="flex items-center gap-4 mb-6">
+              <div className="w-16 h-16 bg-gradient-to-br from-blue-500 to-purple-600 rounded-full flex items-center justify-center">
+                <Star className="w-8 h-8 text-white" />
+              </div>
+              <div>
+                <h2 className="text-2xl font-bold text-slate-900">V2 深度分析结果</h2>
+                <p className="text-slate-600">基于 SEO 数据、竞品分析和市场机会评估</p>
+              </div>
+            </div>
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+              <div className="text-center">
+                <p className="text-sm text-slate-600 mb-1">流量获取力</p>
+                <p className="text-3xl font-bold text-blue-600">{idea.trafficScore ?? 0}</p>
+                <p className="text-xs text-slate-500">权重 40%</p>
+              </div>
+              <div className="text-center">
+                <p className="text-sm text-slate-600 mb-1">变现潜力</p>
+                <p className="text-3xl font-bold text-green-600">{idea.monetizationScore ?? 0}</p>
+                <p className="text-xs text-slate-500">权重 35%</p>
+              </div>
+              <div className="text-center">
+                <p className="text-sm text-slate-600 mb-1">执行可行性</p>
+                <p className="text-3xl font-bold text-purple-600">{idea.executionScore ?? 0}</p>
+                <p className="text-xs text-slate-500">权重 25%</p>
+              </div>
+              <div className="text-center border-l-2 border-blue-200 pl-6">
+                <p className="text-sm text-slate-600 mb-1">机会总分</p>
+                <p className="text-4xl font-bold text-slate-900">{idea.opportunityScore}</p>
+                <Badge variant={
+                  (idea.aiRecommendation as Record<string, unknown>)?.verdict === 'strong_go' ? 'green' :
+                  (idea.aiRecommendation as Record<string, unknown>)?.verdict === 'go' ? 'green' :
+                  (idea.aiRecommendation as Record<string, unknown>)?.verdict === 'cautious' ? 'yellow' : 'red'
+                } className="mt-1">
+                  {(idea.aiRecommendation as Record<string, unknown>)?.verdict === 'strong_go' ? '强烈推荐' :
+                   (idea.aiRecommendation as Record<string, unknown>)?.verdict === 'go' ? '建议做' :
+                   (idea.aiRecommendation as Record<string, unknown>)?.verdict === 'cautious' ? '需验证' : '不建议'}
+                </Badge>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      ) : !idea.aiSeoAnalysis ? (
+        <Card className="mb-6 border-2 border-dashed border-blue-300 bg-blue-50/50">
+          <CardContent className="p-8 text-center">
+            <Lightbulb className="w-12 h-12 text-blue-500 mx-auto mb-4" />
+            <h3 className="text-xl font-bold text-slate-900 mb-2">运行 V2 深度分析</h3>
+            <p className="text-slate-600 mb-4">获取 SEO 数据、竞品分析和 AI 商业建议</p>
+            <Button size="lg" onClick={runV2Analysis} disabled={runningV2}>
+              {runningV2 ? '分析中...' : '开始分析（约 30 秒）'}
+            </Button>
+          </CardContent>
+        </Card>
+      ) : null}
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
         {/* Score Radar Chart */}
@@ -339,47 +403,6 @@ export default function IdeaDetailPage() {
           </CardHeader>
           <CardContent>
             <TrendLine data={idea.trendHistory} />
-          </CardContent>
-        </Card>
-      )}
-
-      {/* V2 Opportunity Score */}
-      {idea.opportunityScore !== undefined && idea.opportunityScore > 0 && (
-        <Card className="mb-6 border-blue-200 bg-blue-50/30">
-          <CardHeader>
-            <CardTitle>V2 商业机会评分</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-              <div className="text-center">
-                <p className="text-sm text-slate-600 mb-1">流量获取力</p>
-                <p className="text-3xl font-bold text-blue-600">{idea.trafficScore ?? 0}</p>
-                <p className="text-xs text-slate-500">权重 40%</p>
-              </div>
-              <div className="text-center">
-                <p className="text-sm text-slate-600 mb-1">变现潜力</p>
-                <p className="text-3xl font-bold text-green-600">{idea.monetizationScore ?? 0}</p>
-                <p className="text-xs text-slate-500">权重 35%</p>
-              </div>
-              <div className="text-center">
-                <p className="text-sm text-slate-600 mb-1">执行可行性</p>
-                <p className="text-3xl font-bold text-purple-600">{idea.executionScore ?? 0}</p>
-                <p className="text-xs text-slate-500">权重 25%</p>
-              </div>
-              <div className="text-center border-l-2 border-blue-200 pl-6">
-                <p className="text-sm text-slate-600 mb-1">机会总分</p>
-                <p className="text-4xl font-bold text-slate-900">{idea.opportunityScore}</p>
-                <Badge variant={
-                  (idea.aiRecommendation as Record<string, unknown>)?.verdict === 'strong_go' ? 'green' :
-                  (idea.aiRecommendation as Record<string, unknown>)?.verdict === 'go' ? 'green' :
-                  (idea.aiRecommendation as Record<string, unknown>)?.verdict === 'cautious' ? 'yellow' : 'red'
-                } className="mt-1">
-                  {(idea.aiRecommendation as Record<string, unknown>)?.verdict === 'strong_go' ? '强烈推荐' :
-                   (idea.aiRecommendation as Record<string, unknown>)?.verdict === 'go' ? '建议做' :
-                   (idea.aiRecommendation as Record<string, unknown>)?.verdict === 'cautious' ? '需验证' : '不建议'}
-                </Badge>
-              </div>
-            </div>
           </CardContent>
         </Card>
       )}
