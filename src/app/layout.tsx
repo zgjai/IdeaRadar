@@ -1,5 +1,5 @@
 import type { Metadata } from 'next';
-import { LayoutDashboard, Lightbulb, Settings, Radar } from 'lucide-react';
+import { LayoutDashboard, Lightbulb, Settings, Radar, Search, DollarSign } from 'lucide-react';
 import Link from 'next/link';
 import './globals.css';
 
@@ -44,6 +44,15 @@ export default function RootLayout({
                   >
                     <Lightbulb className="w-5 h-5" />
                     创意库
+                  </Link>
+                </li>
+                <li>
+                  <Link
+                    href="/keywords"
+                    className="flex items-center gap-3 px-4 py-3 text-slate-700 hover:bg-slate-100 rounded-lg transition-colors"
+                  >
+                    <Search className="w-5 h-5" />
+                    关键词
                   </Link>
                 </li>
                 <li>

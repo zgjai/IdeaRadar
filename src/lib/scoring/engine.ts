@@ -79,35 +79,45 @@ export function categorizeScore(score: number): 'S' | 'A' | 'B' | 'C' | 'D' {
 }
 
 /**
- * Calculate confidence based on data completeness
+ * Calculate confidence based on data completeness (V2 extended)
  */
 export function calculateConfidence(idea: Idea): number {
   let confidence = 0;
   let maxConfidence = 0;
 
   // Base data always present
-  maxConfidence += 20;
-  confidence += 20;
+  maxConfidence += 10;
+  confidence += 10;
 
   // Source metrics
-  maxConfidence += 15;
-  if ((idea.sourceScore ?? 0) > 0) confidence += 15;
+  maxConfidence += 10;
+  if ((idea.sourceScore ?? 0) > 0) confidence += 10;
 
   // AI screening
-  maxConfidence += 20;
-  if (idea.category) confidence += 20;
+  maxConfidence += 10;
+  if (idea.category) confidence += 10;
 
-  // AI deep analysis
-  maxConfidence += 45;
-  if (idea.aiPainPoint) confidence += 15;
-  if (idea.aiFeatures) confidence += 15;
-  if (idea.analyzedAt) confidence += 15;
+  // AI deep analysis (V1)
+  maxConfidence += 20;
+  if (idea.aiPainPoint) confidence += 10;
+  if (idea.aiFeatures) confidence += 10;
+
+  // SEO validation (V2)
+  maxConfidence += 20;
+  if (idea.primaryKeyword) confidence += 10;
+  if (idea.targetSearchVolume) confidence += 10;
+
+  // V2 analysis pipeline
+  maxConfidence += 30;
+  if (idea.aiSeoAnalysis) confidence += 10;
+  if (idea.aiCompetitorAnalysis) confidence += 10;
+  if (idea.aiMonetizationAnalysis) confidence += 10;
 
   return Math.round((confidence / maxConfidence) * 100);
 }
 
 /**
- * Update a single idea's scores
+ * Update a single idea's scores (V1 + V2)
  */
 export async function updateIdeaScore(ideaId: string): Promise<void> {
   const idea = await db.query.ideas.findFirst({
@@ -120,8 +130,13 @@ export async function updateIdeaScore(ideaId: string): Promise<void> {
 
   const trendScore = calculateTrendScore(idea);
   const finalScore = calculateFinalScore({ ...idea, trendScore });
-  const rankCategory = categorizeScore(finalScore);
   const confidence = calculateConfidence(idea);
+
+  // Use V2 opportunityScore for ranking if available, otherwise V1 finalScore
+  const effectiveScore = idea.opportunityScore && idea.opportunityScore > 0
+    ? idea.opportunityScore
+    : finalScore;
+  const rankCategory = categorizeScore(effectiveScore);
 
   await db
     .update(ideas)
@@ -142,6 +157,7 @@ export async function updateIdeaScore(ideaId: string): Promise<void> {
     score: trendScore,
     metadata: JSON.stringify({
       finalScore,
+      opportunityScore: idea.opportunityScore,
       rankCategory,
       sourceScore: idea.sourceScore,
     }),

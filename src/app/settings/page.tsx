@@ -22,6 +22,11 @@ interface Settings {
     temperature: number;
     dailyBudget: number;
   };
+  seoApis: {
+    dataForSeoLogin: string;
+    dataForSeoPassword: string;
+    serpApiKey: string;
+  };
   dataSources: {
     hackernews: { enabled: boolean };
     producthunt: { enabled: boolean; apiToken: string };
@@ -49,6 +54,11 @@ const DEFAULT_SETTINGS: Settings = {
     temperature: 0.3,
     dailyBudget: 5,
   },
+  seoApis: {
+    dataForSeoLogin: '',
+    dataForSeoPassword: '',
+    serpApiKey: '',
+  },
   dataSources: {
     hackernews: { enabled: true },
     producthunt: { enabled: false, apiToken: '' },
@@ -71,6 +81,9 @@ function mergeSettings(saved: Record<string, string>): Settings {
   if (saved['ai.analysis.apiKey']) s.aiConfig.analysisModel.apiKey = saved['ai.analysis.apiKey'];
   if (saved['ai.temperature']) s.aiConfig.temperature = parseFloat(saved['ai.temperature']);
   if (saved['ai.dailyBudget']) s.aiConfig.dailyBudget = parseInt(saved['ai.dailyBudget']);
+  if (saved['seo.dataforseo.login']) s.seoApis.dataForSeoLogin = saved['seo.dataforseo.login'];
+  if (saved['seo.dataforseo.password']) s.seoApis.dataForSeoPassword = saved['seo.dataforseo.password'];
+  if (saved['seo.serpapi.apiKey']) s.seoApis.serpApiKey = saved['seo.serpapi.apiKey'];
   if (saved['sources.hackernews.enabled']) s.dataSources.hackernews.enabled = saved['sources.hackernews.enabled'] === 'true';
   if (saved['sources.producthunt.enabled']) s.dataSources.producthunt.enabled = saved['sources.producthunt.enabled'] === 'true';
   if (saved['sources.producthunt.apiToken']) s.dataSources.producthunt.apiToken = saved['sources.producthunt.apiToken'];
@@ -119,6 +132,9 @@ export default function SettingsPage() {
         'ai.analysis.apiKey': settings.aiConfig.analysisModel.apiKey,
         'ai.temperature': String(settings.aiConfig.temperature),
         'ai.dailyBudget': String(settings.aiConfig.dailyBudget),
+        'seo.dataforseo.login': settings.seoApis.dataForSeoLogin,
+        'seo.dataforseo.password': settings.seoApis.dataForSeoPassword,
+        'seo.serpapi.apiKey': settings.seoApis.serpApiKey,
         'sources.hackernews.enabled': String(settings.dataSources.hackernews.enabled),
         'sources.producthunt.enabled': String(settings.dataSources.producthunt.enabled),
         'sources.producthunt.apiToken': settings.dataSources.producthunt.apiToken,
@@ -367,6 +383,75 @@ export default function SettingsPage() {
                 }
               />
             </div>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* SEO API Configuration */}
+      <Card className="mb-6">
+        <CardHeader>
+          <CardTitle>SEO API 配置</CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div>
+            <h3 className="text-sm font-semibold text-slate-700 mb-3">DataForSEO</h3>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <label className="block text-sm text-slate-600 mb-1">登录名</label>
+                <Input
+                  placeholder="your@email.com"
+                  value={settings.seoApis.dataForSeoLogin}
+                  onChange={(e) =>
+                    setSettings({
+                      ...settings,
+                      seoApis: {
+                        ...settings.seoApis,
+                        dataForSeoLogin: e.target.value,
+                      },
+                    })
+                  }
+                />
+              </div>
+              <div>
+                <label className="block text-sm text-slate-600 mb-1">密码</label>
+                <Input
+                  type="password"
+                  value={settings.seoApis.dataForSeoPassword}
+                  onChange={(e) =>
+                    setSettings({
+                      ...settings,
+                      seoApis: {
+                        ...settings.seoApis,
+                        dataForSeoPassword: e.target.value,
+                      },
+                    })
+                  }
+                />
+              </div>
+            </div>
+            <p className="text-xs text-slate-400 mt-1">用于关键词数据和 SERP 分析，注册地址: dataforseo.com</p>
+          </div>
+
+          <div>
+            <h3 className="text-sm font-semibold text-slate-700 mb-3">SerpAPI</h3>
+            <div>
+              <label className="block text-sm text-slate-600 mb-1">API 密钥</label>
+              <Input
+                type="password"
+                placeholder="your-serpapi-key"
+                value={settings.seoApis.serpApiKey}
+                onChange={(e) =>
+                  setSettings({
+                    ...settings,
+                    seoApis: {
+                      ...settings.seoApis,
+                      serpApiKey: e.target.value,
+                    },
+                  })
+                }
+              />
+            </div>
+            <p className="text-xs text-slate-400 mt-1">备用 SERP 数据源，注册地址: serpapi.com</p>
           </div>
         </CardContent>
       </Card>

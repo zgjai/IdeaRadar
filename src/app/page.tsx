@@ -30,6 +30,11 @@ export default function DashboardPage() {
   const [loading, setLoading] = useState(true);
   const [collecting, setCollecting] = useState(false);
   const [analyzing, setAnalyzing] = useState(false);
+  const [analyzingV2, setAnalyzingV2] = useState(false);
+  const [budget, setBudget] = useState<{
+    today: { total: number; remaining: number };
+    month: { total: number; remaining: number; byApi: Record<string, number> };
+  } | null>(null);
 
   useEffect(() => {
     fetchDashboardData();
@@ -37,16 +42,19 @@ export default function DashboardPage() {
 
   const fetchDashboardData = async () => {
     try {
-      const [statsRes, ideasRes] = await Promise.all([
+      const [statsRes, ideasRes, budgetRes] = await Promise.all([
         fetch('/api/stats'),
         fetch('/api/ideas?page=1&limit=10&sort=finalScore&order=desc'),
+        fetch('/api/budget').catch(() => null),
       ]);
 
       const statsData = await statsRes.json();
       const ideasData = await ideasRes.json();
+      const budgetData = budgetRes ? await budgetRes.json() : null;
 
       setStats(statsData);
       setTopIdeas(ideasData?.ideas || []);
+      if (budgetData) setBudget(budgetData);
     } catch (error) {
       console.error('Failed to fetch dashboard data:', error);
     } finally {
@@ -142,11 +150,71 @@ export default function DashboardPage() {
               onClick={handleAnalyze}
               disabled={analyzing}
             >
-              {analyzing ? '分析中...' : '运行分析'}
+              {analyzing ? '分析中...' : 'V1 分析'}
+            </Button>
+            <Button
+              variant="default"
+              onClick={async () => {
+                setAnalyzingV2(true);
+                try {
+                  await fetch('/api/analyze-v2', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ mode: 'batch', limit: 5 }),
+                  });
+                  await fetchDashboardData();
+                } catch (e) {
+                  console.error('V2 analysis failed:', e);
+                } finally {
+                  setAnalyzingV2(false);
+                }
+              }}
+              disabled={analyzingV2}
+            >
+              {analyzingV2 ? 'V2 分析中...' : 'V2 深度分析'}
             </Button>
           </div>
         </CardContent>
       </Card>
+
+      {/* Budget Overview */}
+      {budget && (
+        <Card className="mb-8">
+          <CardHeader>
+            <CardTitle>API 成本概览</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+              <div>
+                <p className="text-sm text-slate-600">今日消耗</p>
+                <p className="text-2xl font-bold text-slate-900">
+                  ${budget.today.total.toFixed(2)}
+                </p>
+                <p className="text-xs text-slate-500">
+                  剩余 ${budget.today.remaining.toFixed(2)}
+                </p>
+              </div>
+              <div>
+                <p className="text-sm text-slate-600">本月消耗</p>
+                <p className="text-2xl font-bold text-slate-900">
+                  ${budget.month.total.toFixed(2)}
+                </p>
+                <p className="text-xs text-slate-500">
+                  剩余 ${budget.month.remaining.toFixed(2)}
+                </p>
+              </div>
+              {Object.entries(budget.month.byApi).map(([api, cost]) => (
+                <div key={api}>
+                  <p className="text-sm text-slate-600">{api}</p>
+                  <p className="text-lg font-medium text-slate-700">
+                    ${(cost as number).toFixed(2)}
+                  </p>
+                </div>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
+      )}
 
       {/* Recent Top Ideas */}
       {topIdeas.length > 0 && <RecentIdeas ideas={topIdeas} />}

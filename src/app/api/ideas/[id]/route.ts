@@ -27,12 +27,22 @@ export async function GET(
 
     // Parse JSON fields
     const features = idea.aiFeatures ? JSON.parse(idea.aiFeatures) : null;
-    const competitors = idea.aiCompetitors ? JSON.parse(idea.aiCompetitors) : null;
+    const competitorsList = idea.aiCompetitors ? JSON.parse(idea.aiCompetitors) : null;
+
+    // Parse V2 JSON fields
+    const aiSeoAnalysis = idea.aiSeoAnalysis ? JSON.parse(idea.aiSeoAnalysis) : null;
+    const aiCompetitorAnalysis = idea.aiCompetitorAnalysis ? JSON.parse(idea.aiCompetitorAnalysis) : null;
+    const aiMonetizationAnalysis = idea.aiMonetizationAnalysis ? JSON.parse(idea.aiMonetizationAnalysis) : null;
+    const aiRecommendation = idea.aiRecommendation ? JSON.parse(idea.aiRecommendation) : null;
 
     return NextResponse.json({
       ...idea,
       aiFeatures: features,
-      aiCompetitors: competitors,
+      aiCompetitors: competitorsList,
+      aiSeoAnalysis,
+      aiCompetitorAnalysis,
+      aiMonetizationAnalysis,
+      aiRecommendation,
       trendHistory: history,
     });
   } catch (error) {

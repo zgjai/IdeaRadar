@@ -16,6 +16,7 @@ interface IdeaDetail {
   url?: string;
   source: string;
   category?: string;
+  status?: string;
   finalScore: number;
   rankCategory: string;
   discoveredAt: string;
@@ -25,6 +26,21 @@ interface IdeaDetail {
   competitionScore: number;
   feasibilityScore: number;
   growthScore: number;
+  // V2 fields
+  trafficScore?: number;
+  monetizationScore?: number;
+  executionScore?: number;
+  opportunityScore?: number;
+  primaryKeyword?: string;
+  targetSearchVolume?: number;
+  targetKeywordDifficulty?: number;
+  targetCpc?: number;
+  estimatedTraffic?: number;
+  competitorCount?: number;
+  aiSeoAnalysis?: Record<string, unknown>;
+  aiCompetitorAnalysis?: Record<string, unknown>;
+  aiMonetizationAnalysis?: Record<string, unknown>;
+  aiRecommendation?: Record<string, unknown>;
   analysis?: {
     summary?: string;
     painPoint?: string;
@@ -148,14 +164,36 @@ export default function IdeaDetailPage() {
               </span>
             </div>
           </div>
-          {idea.url && (
-            <a href={idea.url} target="_blank" rel="noopener noreferrer">
-              <Button variant="outline">
-                <ExternalLink className="w-4 h-4 mr-2" />
-                查看原文
+          <div className="flex gap-2">
+            {idea.url && (
+              <a href={idea.url} target="_blank" rel="noopener noreferrer">
+                <Button variant="outline">
+                  <ExternalLink className="w-4 h-4 mr-2" />
+                  查看原文
+                </Button>
+              </a>
+            )}
+            {!idea.aiSeoAnalysis && (
+              <Button
+                onClick={async () => {
+                  try {
+                    const res = await fetch('/api/analyze-v2', {
+                      method: 'POST',
+                      headers: { 'Content-Type': 'application/json' },
+                      body: JSON.stringify({ ideaId: idea.id }),
+                    });
+                    if (res.ok) {
+                      fetchIdea(); // refresh
+                    }
+                  } catch (e) {
+                    console.error(e);
+                  }
+                }}
+              >
+                运行 V2 分析
               </Button>
-            </a>
-          )}
+            )}
+          </div>
         </div>
       </div>
 
@@ -301,6 +339,163 @@ export default function IdeaDetailPage() {
           </CardHeader>
           <CardContent>
             <TrendLine data={idea.trendHistory} />
+          </CardContent>
+        </Card>
+      )}
+
+      {/* V2 Opportunity Score */}
+      {idea.opportunityScore !== undefined && idea.opportunityScore > 0 && (
+        <Card className="mb-6 border-blue-200 bg-blue-50/30">
+          <CardHeader>
+            <CardTitle>V2 商业机会评分</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+              <div className="text-center">
+                <p className="text-sm text-slate-600 mb-1">流量获取力</p>
+                <p className="text-3xl font-bold text-blue-600">{idea.trafficScore ?? 0}</p>
+                <p className="text-xs text-slate-500">权重 40%</p>
+              </div>
+              <div className="text-center">
+                <p className="text-sm text-slate-600 mb-1">变现潜力</p>
+                <p className="text-3xl font-bold text-green-600">{idea.monetizationScore ?? 0}</p>
+                <p className="text-xs text-slate-500">权重 35%</p>
+              </div>
+              <div className="text-center">
+                <p className="text-sm text-slate-600 mb-1">执行可行性</p>
+                <p className="text-3xl font-bold text-purple-600">{idea.executionScore ?? 0}</p>
+                <p className="text-xs text-slate-500">权重 25%</p>
+              </div>
+              <div className="text-center border-l-2 border-blue-200 pl-6">
+                <p className="text-sm text-slate-600 mb-1">机会总分</p>
+                <p className="text-4xl font-bold text-slate-900">{idea.opportunityScore}</p>
+                <Badge variant={
+                  (idea.aiRecommendation as Record<string, unknown>)?.verdict === 'strong_go' ? 'green' :
+                  (idea.aiRecommendation as Record<string, unknown>)?.verdict === 'go' ? 'green' :
+                  (idea.aiRecommendation as Record<string, unknown>)?.verdict === 'cautious' ? 'yellow' : 'red'
+                } className="mt-1">
+                  {(idea.aiRecommendation as Record<string, unknown>)?.verdict === 'strong_go' ? '强烈推荐' :
+                   (idea.aiRecommendation as Record<string, unknown>)?.verdict === 'go' ? '建议做' :
+                   (idea.aiRecommendation as Record<string, unknown>)?.verdict === 'cautious' ? '需验证' : '不建议'}
+                </Badge>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* V2 SEO & Keyword Data */}
+      {idea.primaryKeyword && (
+        <Card className="mb-6">
+          <CardHeader>
+            <CardTitle>SEO 关键词数据</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
+              <div>
+                <p className="text-sm text-slate-600">主要关键词</p>
+                <p className="font-medium text-slate-900">{idea.primaryKeyword}</p>
+              </div>
+              <div>
+                <p className="text-sm text-slate-600">月搜索量</p>
+                <p className="font-mono font-medium text-slate-900">
+                  {idea.targetSearchVolume?.toLocaleString() ?? '-'}
+                </p>
+              </div>
+              <div>
+                <p className="text-sm text-slate-600">关键词难度</p>
+                <p className="font-mono font-medium text-slate-900">
+                  {idea.targetKeywordDifficulty ?? '-'}/100
+                </p>
+              </div>
+              <div>
+                <p className="text-sm text-slate-600">CPC</p>
+                <p className="font-mono font-medium text-slate-900">
+                  {idea.targetCpc ? `$${idea.targetCpc.toFixed(2)}` : '-'}
+                </p>
+              </div>
+              <div>
+                <p className="text-sm text-slate-600">竞品数量</p>
+                <p className="font-mono font-medium text-slate-900">
+                  {idea.competitorCount ?? '-'}
+                </p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* V2 AI Recommendation */}
+      {idea.aiRecommendation && (
+        <Card className="mb-6">
+          <CardHeader>
+            <CardTitle>AI 可执行建议</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            {(() => {
+              const rec = idea.aiRecommendation as Record<string, string | string[]>;
+              return (
+                <>
+                  {rec.productForm && (
+                    <div>
+                      <p className="text-sm text-slate-600 mb-1">建议产品形态</p>
+                      <p className="font-medium text-slate-900">
+                        {String(rec.productForm)}
+                      </p>
+                    </div>
+                  )}
+                  {Array.isArray(rec.mvpFeatures) && (
+                    <div>
+                      <p className="text-sm text-slate-600 mb-2">MVP 核心功能</p>
+                      <div className="flex flex-wrap gap-2">
+                        {(rec.mvpFeatures as string[]).map(
+                          (f: string, i: number) => (
+                            <Badge key={i} variant="blue">{f}</Badge>
+                          )
+                        )}
+                      </div>
+                    </div>
+                  )}
+                  {rec.trafficStrategy && (
+                    <div>
+                      <p className="text-sm text-slate-600 mb-1">流量获取策略</p>
+                      <p className="text-slate-700">
+                        {String(rec.trafficStrategy)}
+                      </p>
+                    </div>
+                  )}
+                  {rec.monetizationPath && (
+                    <div>
+                      <p className="text-sm text-slate-600 mb-1">变现路径</p>
+                      <p className="text-slate-700">
+                        {String(rec.monetizationPath)}
+                      </p>
+                    </div>
+                  )}
+                  {Array.isArray(rec.risks) && (
+                    <div>
+                      <p className="text-sm text-slate-600 mb-2">风险提示</p>
+                      <ul className="space-y-1">
+                        {(rec.risks as string[]).map(
+                          (r: string, i: number) => (
+                            <li key={i} className="text-sm text-red-700 flex items-start">
+                              <span className="mr-2">!</span>{r}
+                            </li>
+                          )
+                        )}
+                      </ul>
+                    </div>
+                  )}
+                  {rec.reasoning && (
+                    <div className="pt-2 border-t">
+                      <p className="text-sm text-slate-600 italic">
+                        {String(rec.reasoning)}
+                      </p>
+                    </div>
+                  )}
+                </>
+              );
+            })()}
           </CardContent>
         </Card>
       )}
