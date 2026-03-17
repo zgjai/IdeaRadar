@@ -8,6 +8,7 @@ import { Button } from '@/components/ui/button';
 
 interface Settings {
   aiConfig: {
+    baseUrl: string;
     screeningModel: {
       provider: string;
       model: string;
@@ -34,6 +35,7 @@ interface Settings {
 
 const DEFAULT_SETTINGS: Settings = {
   aiConfig: {
+    baseUrl: '',
     screeningModel: {
       provider: 'openrouter',
       model: 'anthropic/claude-haiku-4.5',
@@ -60,6 +62,7 @@ const DEFAULT_SETTINGS: Settings = {
 
 function mergeSettings(saved: Record<string, string>): Settings {
   const s: Settings = JSON.parse(JSON.stringify(DEFAULT_SETTINGS));
+  if (saved['ai.baseUrl']) s.aiConfig.baseUrl = saved['ai.baseUrl'];
   if (saved['ai.screening.provider']) s.aiConfig.screeningModel.provider = saved['ai.screening.provider'];
   if (saved['ai.screening.model']) s.aiConfig.screeningModel.model = saved['ai.screening.model'];
   if (saved['ai.screening.apiKey']) s.aiConfig.screeningModel.apiKey = saved['ai.screening.apiKey'];
@@ -105,6 +108,9 @@ export default function SettingsPage() {
     setSaving(true);
     try {
       const flat: Record<string, string> = {
+        'ai.baseUrl': settings.aiConfig.baseUrl,
+        'ai.screening.baseUrl': settings.aiConfig.baseUrl,
+        'ai.analysis.baseUrl': settings.aiConfig.baseUrl,
         'ai.screening.provider': settings.aiConfig.screeningModel.provider,
         'ai.screening.model': settings.aiConfig.screeningModel.model,
         'ai.screening.apiKey': settings.aiConfig.screeningModel.apiKey,
@@ -167,6 +173,25 @@ export default function SettingsPage() {
           <CardTitle>AI 模型配置</CardTitle>
         </CardHeader>
         <CardContent className="space-y-6">
+          {/* Shared API Base URL */}
+          <div>
+            <label className="block text-sm text-slate-600 mb-1">API 端点地址</label>
+            <Input
+              placeholder="https://api.openrouter.ai/api/v1 或 https://yunwu.ai/v1/chat/completions"
+              value={settings.aiConfig.baseUrl}
+              onChange={(e) =>
+                setSettings({
+                  ...settings,
+                  aiConfig: {
+                    ...settings.aiConfig,
+                    baseUrl: e.target.value,
+                  },
+                })
+              }
+            />
+            <p className="text-xs text-slate-400 mt-1">留空则使用 .env 中的 AI_GATEWAY_URL，支持 base URL 或完整端点地址</p>
+          </div>
+
           {/* Screening Model */}
           <div>
             <h3 className="text-sm font-semibold text-slate-700 mb-3">初筛模型</h3>
