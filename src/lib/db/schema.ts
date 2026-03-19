@@ -214,6 +214,24 @@ export const apiCostLogs = sqliteTable('api_cost_logs', {
 });
 
 // =============================================================================
+// V3: Site Research
+// =============================================================================
+
+export const siteResearches = sqliteTable('site_researches', {
+  id: integer('id').primaryKey({ autoIncrement: true }),
+  url: text('url').notNull(),
+  domain: text('domain').notNull(),
+  title: text('title'),
+  status: text('status').notNull().default('pending'), // pending/crawling/analyzing/completed/failed
+  pageContent: text('page_content'), // crawled text content
+  aiAnalysis: text('ai_analysis'), // JSON: structured analysis result
+  errorMessage: text('error_message'),
+  ideaId: text('idea_id').references(() => ideas.id),
+  createdAt: text('created_at').notNull().default(sql`CURRENT_TIMESTAMP`),
+  updatedAt: text('updated_at').notNull().default(sql`CURRENT_TIMESTAMP`),
+});
+
+// =============================================================================
 // Type Exports
 // =============================================================================
 
@@ -232,3 +250,4 @@ export type MonetizationSignal = typeof monetizationSignals.$inferSelect;
 export type IdeaKeyword = typeof ideaKeywords.$inferSelect;
 export type ApiCacheEntry = typeof apiCache.$inferSelect;
 export type ApiCostLog = typeof apiCostLogs.$inferSelect;
+export type SiteResearch = typeof siteResearches.$inferSelect;
