@@ -49,12 +49,34 @@ export interface SiteAnalysis {
 function buildPrompt(crawl: CrawlResult): string {
   let pagesContent = '';
   for (const page of crawl.pages) {
-    pagesContent += `\n\n--- 页面: ${page.path} (${page.title}) ---\n${page.text}`;
+    pagesContent += `\n\n--- 页面: ${page.path} (${page.title}) [提取方式: ${page.extractionMethod}] ---\n${page.markdown}`;
   }
 
   // Truncate total content to fit in context window
   if (pagesContent.length > 40000) {
     pagesContent = pagesContent.slice(0, 40000) + '\n...(内容截断)';
+  }
+
+  // Build metadata section
+  const meta = crawl.metadata;
+  let metaSection = '';
+  if (crawl.description) {
+    metaSection += `网站描述: ${crawl.description}\n`;
+  }
+  if (meta.siteName) {
+    metaSection += `站点名称: ${meta.siteName}\n`;
+  }
+  if (meta.techSignals.length > 0) {
+    metaSection += `检测到的技术栈: ${meta.techSignals.join(', ')}\n`;
+  }
+  if (meta.jsonLd && meta.jsonLd.length > 0) {
+    const jsonLdSummary = meta.jsonLd
+      .map((item) => `${item['@type'] || 'Unknown'}: ${item.name || item.headline || ''}`)
+      .filter(Boolean)
+      .join('; ');
+    if (jsonLdSummary) {
+      metaSection += `结构化数据: ${jsonLdSummary}\n`;
+    }
   }
 
   return `你是一位资深的产品分析师和市场研究专家。请对以下网站进行全面、深入的分析。
@@ -63,8 +85,9 @@ function buildPrompt(crawl: CrawlResult): string {
 域名: ${crawl.domain}
 网站标题: ${crawl.title}
 抓取到的页面数: ${crawl.pages.length}
-
-== 网站内容 ==
+总提取文本长度: ${crawl.totalTextLength} 字符
+${metaSection}
+== 网站内容（Markdown 格式） ==
 ${pagesContent}
 
 == 分析要求 ==
@@ -72,7 +95,7 @@ ${pagesContent}
 请从以下 7 个维度进行系统性分析，从整体到细节，要求具体、有洞察力，避免泛泛而谈：
 
 1. **产品概览** - 这个网站/产品是什么？解决什么问题？核心价值主张是什么？属于什么类别？
-2. **产品设计分析** - 核心功能列表、用户使用流程、推测的技术栈、设计风格、产品设计亮点
+2. **产品设计分析** - 核心功能列表、用户使用流程、技术栈（结合检测到的技术信号）、设计风格、产品设计亮点
 3. **用户画像** - 主要目标用户、次要用户群、使用场景、用户需求、用户旅程
 4. **商业模式** - 变现方式、定价策略、收入来源、市场规模判断
 5. **优势分析** - 列出 3-5 个具体优势，说明为什么是优势

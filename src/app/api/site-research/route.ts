@@ -79,7 +79,7 @@ export async function POST(request: NextRequest) {
         .update(siteResearches)
         .set({
           title: crawlResult.title,
-          pageContent: crawlResult.pages.map((p) => `[${p.path}] ${p.text}`).join('\n\n'),
+          pageContent: crawlResult.pages.map((p) => `[${p.path}] ${p.markdown}`).join('\n\n'),
           status: 'analyzing',
           updatedAt: new Date().toISOString(),
         })
