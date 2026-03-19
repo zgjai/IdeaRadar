@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react';
 import { useParams } from 'next/navigation';
 import { toast } from 'sonner';
 import Link from 'next/link';
-import { ArrowLeft, ExternalLink, Target, Users, Lightbulb, Star } from 'lucide-react';
+import { ArrowLeft, ExternalLink, Target, Users, Lightbulb, Star, AlertTriangle, ShieldAlert, CheckCircle, FileSearch, XCircle } from 'lucide-react';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -55,6 +55,106 @@ interface IdeaDetail {
     confidence?: number;
   };
   trendHistory?: Array<{ date: string; score: number }>;
+}
+
+function V2VerificationStatus({ rec }: { rec?: Record<string, unknown> }) {
+  if (!rec?.verificationStatus) return null;
+  const vs = rec.verificationStatus as { status: string; reasoning: string; confidence_level: number };
+  return (
+    <Card className={`mb-6 border-2 ${
+      vs.status === 'validated' ? 'bg-gradient-to-r from-green-50 to-emerald-50 border-green-300' :
+      vs.status === 'conditional' ? 'bg-gradient-to-r from-yellow-50 to-amber-50 border-yellow-300' :
+      vs.status === 'needs_evidence' ? 'bg-gradient-to-r from-blue-50 to-cyan-50 border-blue-300' :
+      'bg-gradient-to-r from-red-50 to-rose-50 border-red-300'
+    }`}>
+      <CardContent className="p-6">
+        <div className="flex items-start gap-4">
+          <div className={`w-12 h-12 rounded-full flex items-center justify-center shrink-0 ${
+            vs.status === 'validated' ? 'bg-green-500' :
+            vs.status === 'conditional' ? 'bg-yellow-500' :
+            vs.status === 'needs_evidence' ? 'bg-blue-500' : 'bg-red-500'
+          }`}>
+            {vs.status === 'validated' && <CheckCircle className="w-6 h-6 text-white" />}
+            {vs.status === 'conditional' && <AlertTriangle className="w-6 h-6 text-white" />}
+            {vs.status === 'needs_evidence' && <FileSearch className="w-6 h-6 text-white" />}
+            {vs.status === 'skip' && <XCircle className="w-6 h-6 text-white" />}
+          </div>
+          <div className="flex-1">
+            <div className="flex items-center gap-3 mb-1">
+              <h3 className="text-lg font-bold text-slate-900">
+                {vs.status === 'validated' ? 'PASS - 通过验证' :
+                 vs.status === 'conditional' ? 'CONDITIONAL - 有条件通过' :
+                 vs.status === 'needs_evidence' ? 'PENDING - 待补关键证据' : 'SKIP - 建议放弃'}
+              </h3>
+              <Badge variant={
+                vs.status === 'validated' ? 'green' :
+                vs.status === 'conditional' ? 'yellow' :
+                vs.status === 'needs_evidence' ? 'blue' : 'red'
+              }>
+                {vs.confidence_level}%
+              </Badge>
+            </div>
+            <p className="text-sm text-slate-700">{vs.reasoning}</p>
+          </div>
+        </div>
+      </CardContent>
+    </Card>
+  );
+}
+
+function V2CounterEvidence({ rec }: { rec?: Record<string, unknown> }) {
+  if (!rec?.counterEvidence) return null;
+  const ce = rec.counterEvidence as { failure_reasons: string[]; kill_criteria: string[]; counter_arguments: string[] };
+  return (
+    <Card className="mb-6 border-orange-200 bg-orange-50/30">
+      <CardHeader>
+        <CardTitle className="flex items-center gap-2 text-orange-700">
+          <ShieldAlert className="w-5 h-5" />
+          反证分析
+        </CardTitle>
+      </CardHeader>
+      <CardContent className="space-y-4">
+        {ce.failure_reasons?.length > 0 && (
+          <div>
+            <p className="text-sm font-semibold text-slate-700 mb-2">失败风险：</p>
+            <ul className="space-y-1.5">
+              {ce.failure_reasons.map((r, i) => (
+                <li key={i} className="text-sm text-slate-700 flex items-start">
+                  <span className="w-5 h-5 bg-red-100 text-red-700 rounded-full flex items-center justify-center text-xs font-bold mr-2 shrink-0">{i + 1}</span>
+                  {r}
+                </li>
+              ))}
+            </ul>
+          </div>
+        )}
+        {ce.kill_criteria?.length > 0 && (
+          <div className="border-t pt-3">
+            <p className="text-sm font-semibold text-slate-700 mb-2">终止标准：</p>
+            <div className="space-y-1.5">
+              {ce.kill_criteria.map((k, i) => (
+                <div key={i} className="flex items-start p-2 bg-white rounded-lg border border-orange-200">
+                  <Badge variant="red" className="mr-2 mt-0.5 shrink-0 text-xs">STOP</Badge>
+                  <p className="text-sm text-slate-700 flex-1">{k}</p>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+        {ce.counter_arguments?.length > 0 && (
+          <div className="border-t pt-3">
+            <p className="text-sm font-semibold text-slate-700 mb-2">反驳论据：</p>
+            <ul className="space-y-1.5">
+              {ce.counter_arguments.map((a, i) => (
+                <li key={i} className="text-sm text-slate-700 flex items-start p-2 bg-yellow-50 rounded">
+                  <span className="mr-2 text-yellow-600 shrink-0">!</span>{a}
+                </li>
+              ))}
+            </ul>
+          </div>
+        )}
+      </CardContent>
+    </Card>
+  );
 }
 
 export default function IdeaDetailPage() {
@@ -522,6 +622,12 @@ export default function IdeaDetailPage() {
           </CardContent>
         </Card>
       )}
+
+      {/* V2 Verification Status */}
+      <V2VerificationStatus rec={idea.aiRecommendation} />
+
+      {/* V2 Counter-Evidence */}
+      <V2CounterEvidence rec={idea.aiRecommendation} />
 
       {/* Metadata */}
       <Card>

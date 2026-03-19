@@ -52,6 +52,16 @@ export interface OpportunityRecommendation {
   timeToMvp: string;
   risks: string[];
   reasoning: string;
+  counterEvidence?: {
+    failure_reasons: string[];
+    kill_criteria: string[];
+    counter_arguments: string[];
+  };
+  verificationStatus?: {
+    status: 'validated' | 'conditional' | 'needs_evidence' | 'skip';
+    reasoning: string;
+    confidence_level: number;
+  };
 }
 
 export interface V2AnalysisResult {
@@ -270,14 +280,26 @@ SEO分析：流量评分 ${seo.trafficScore}/100, 预估月流量 ${seo.estimate
   "monetizationPath": "变现路径概述",
   "timeToMvp": "预估MVP开发时间",
   "risks": ["风险1", "风险2"],
-  "reasoning": "2-3句话总结为什么做出这个判断"
+  "reasoning": "2-3句话总结为什么做出这个判断",
+  "counterEvidence": {
+    "failure_reasons": ["具体失败原因1（要具体不泛泛）", "具体失败原因2", "具体失败原因3"],
+    "kill_criteria": ["可量化的终止标准1（如MVP上线3月自然流量<500/月则终止）", "终止标准2", "终止标准3"],
+    "counter_arguments": ["最有力的反驳论据1", "反驳论据2"]
+  },
+  "verificationStatus": {
+    "status": "validated/conditional/needs_evidence/skip",
+    "reasoning": "综合流量、变现、执行三维度给出验证状态的理由",
+    "confidence_level": 0-100的置信度
+  }
 }
 
 判断标准：
-- strong_go: 流量+变现+执行都很优秀，强烈建议做
-- go: 整体良好，建议做但需注意某些方面
-- cautious: 有机会但风险较大，建议进一步验证
-- skip: 不建议做，流量或变现有明显硬伤
+- strong_go: 流量+变现+执行都很优秀，强烈建议做，verificationStatus=validated
+- go: 整体良好，建议做但需注意某些方面，verificationStatus=validated或conditional
+- cautious: 有机会但风险较大，建议进一步验证，verificationStatus=conditional或needs_evidence
+- skip: 不建议做，流量或变现有明显硬伤，verificationStatus=skip
+
+counterEvidence要求：必须诚实、具体、可操作，避免模糊表述。kill_criteria必须可量化。
 
 返回纯 JSON，不要其他文字。`;
 }
@@ -497,5 +519,15 @@ function getDefaultRecommendation(): OpportunityRecommendation {
     timeToMvp: 'TBD',
     risks: ['数据不足，需进一步验证'],
     reasoning: 'AI 分析未能完成，建议手动验证。',
+    counterEvidence: {
+      failure_reasons: ['数据不足，无法给出具体失败分析'],
+      kill_criteria: ['需先完成 AI 分析才能设定终止标准'],
+      counter_arguments: ['当前证据不足以做出判断'],
+    },
+    verificationStatus: {
+      status: 'needs_evidence',
+      reasoning: 'AI 分析未能完成，需要手动验证。',
+      confidence_level: 0,
+    },
   };
 }

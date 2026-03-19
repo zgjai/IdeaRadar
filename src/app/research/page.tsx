@@ -2,7 +2,8 @@
 
 import { useEffect, useState } from 'react';
 import { toast } from 'sonner';
-import { Globe, Search, Clock, CheckCircle, XCircle, ArrowRight, Star, Users, Zap, TrendingUp, ShieldAlert, Lightbulb } from 'lucide-react';
+import { Globe, Search, Clock, CheckCircle, XCircle, ArrowRight, Star, Users, Zap, TrendingUp, ShieldAlert, Lightbulb, Target, AlertTriangle, FileSearch } from 'lucide-react';
+import { FiveDimRadar } from '@/components/charts/five-dim-radar';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -43,6 +44,36 @@ interface SiteAnalysis {
     marketGaps: string[];
     improvements: string[];
     inspirations: string[];
+  };
+  fiveDimensionalScores?: {
+    demand_score: number;
+    pain_score: number;
+    pay_score: number;
+    build_fit_score: number;
+    competition_risk_score: number;
+  };
+  evidenceFramework?: {
+    help_seeking: { signals: string[]; strength: string; examples: string[] };
+    alternative_seeking: { signals: string[]; strength: string; examples: string[] };
+    complaints: { signals: string[]; strength: string; examples: string[] };
+    transaction_intent: { signals: string[]; strength: string; examples: string[] };
+    coverage_summary: string;
+  };
+  counterEvidence?: {
+    failure_reasons: string[];
+    kill_criteria: string[];
+    counter_arguments: string[];
+    validation_plan: {
+      next_steps: string[];
+      critical_assumptions: string[];
+      timeline: string;
+    };
+  };
+  verificationStatus?: {
+    status: string;
+    reasoning: string;
+    confidence_level: number;
+    evidence_gaps: string[];
   };
   overallRating: number;
   summary: string;
@@ -200,6 +231,155 @@ export default function ResearchPage() {
               </div>
             </CardContent>
           </Card>
+
+          {/* Verification Status Banner */}
+          {analysis.verificationStatus && (
+            <Card className={`border-2 ${
+              analysis.verificationStatus.status === 'validated' ? 'bg-gradient-to-r from-green-50 to-emerald-50 border-green-300' :
+              analysis.verificationStatus.status === 'conditional' ? 'bg-gradient-to-r from-yellow-50 to-amber-50 border-yellow-300' :
+              analysis.verificationStatus.status === 'needs_evidence' ? 'bg-gradient-to-r from-blue-50 to-cyan-50 border-blue-300' :
+              'bg-gradient-to-r from-red-50 to-rose-50 border-red-300'
+            }`}>
+              <CardContent className="p-6">
+                <div className="flex items-start gap-4">
+                  <div className={`w-14 h-14 rounded-full flex items-center justify-center shrink-0 ${
+                    analysis.verificationStatus.status === 'validated' ? 'bg-green-500' :
+                    analysis.verificationStatus.status === 'conditional' ? 'bg-yellow-500' :
+                    analysis.verificationStatus.status === 'needs_evidence' ? 'bg-blue-500' : 'bg-red-500'
+                  }`}>
+                    {analysis.verificationStatus.status === 'validated' && <CheckCircle className="w-7 h-7 text-white" />}
+                    {analysis.verificationStatus.status === 'conditional' && <AlertTriangle className="w-7 h-7 text-white" />}
+                    {analysis.verificationStatus.status === 'needs_evidence' && <FileSearch className="w-7 h-7 text-white" />}
+                    {analysis.verificationStatus.status === 'skip' && <XCircle className="w-7 h-7 text-white" />}
+                  </div>
+                  <div className="flex-1">
+                    <div className="flex items-center gap-3 mb-2">
+                      <h3 className="text-xl font-bold text-slate-900">
+                        {analysis.verificationStatus.status === 'validated' && 'PASS - 通过验证'}
+                        {analysis.verificationStatus.status === 'conditional' && 'CONDITIONAL - 有条件通过'}
+                        {analysis.verificationStatus.status === 'needs_evidence' && 'PENDING - 待补关键证据'}
+                        {analysis.verificationStatus.status === 'skip' && 'SKIP - 建议放弃'}
+                      </h3>
+                      <Badge variant={
+                        analysis.verificationStatus.status === 'validated' ? 'green' :
+                        analysis.verificationStatus.status === 'conditional' ? 'yellow' :
+                        analysis.verificationStatus.status === 'needs_evidence' ? 'blue' : 'red'
+                      }>
+                        {analysis.verificationStatus.confidence_level}%
+                      </Badge>
+                    </div>
+                    <p className="text-slate-700 text-sm">{analysis.verificationStatus.reasoning}</p>
+                    {analysis.verificationStatus.evidence_gaps.length > 0 && (
+                      <div className="mt-3 p-3 bg-white/60 rounded-lg border border-slate-200">
+                        <p className="text-xs font-semibold text-slate-600 mb-1">证据缺口：</p>
+                        <ul className="space-y-1">
+                          {analysis.verificationStatus.evidence_gaps.map((gap, i) => (
+                            <li key={i} className="text-xs text-slate-600 flex items-start">
+                              <span className="mr-1.5">-</span>{gap}
+                            </li>
+                          ))}
+                        </ul>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          )}
+
+          {/* Five-Dimensional Market Validation Scores */}
+          {analysis.fiveDimensionalScores && (
+            <Card className="bg-gradient-to-r from-purple-50 to-pink-50 border-2 border-purple-200">
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Target className="w-5 h-5 text-purple-600" />
+                  五维市场验证评分
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                  <div className="grid grid-cols-5 gap-3">
+                    {[
+                      { key: 'demand_score' as const, label: '需求强度', color: 'from-blue-500 to-blue-600' },
+                      { key: 'pain_score' as const, label: '痛点强度', color: 'from-red-500 to-red-600' },
+                      { key: 'pay_score' as const, label: '付费意愿', color: 'from-green-500 to-green-600' },
+                      { key: 'build_fit_score' as const, label: '开发可行性', color: 'from-amber-500 to-amber-600' },
+                      { key: 'competition_risk_score' as const, label: '竞争风险', color: 'from-purple-500 to-purple-600' },
+                    ].map(({ key, label, color }) => (
+                      <div key={key} className="text-center">
+                        <div className={`w-16 h-16 mx-auto mb-2 rounded-full bg-gradient-to-br ${color} flex items-center justify-center`}>
+                          <span className="text-xl font-bold text-white">
+                            {analysis.fiveDimensionalScores![key].toFixed(1)}
+                          </span>
+                        </div>
+                        <p className="text-xs font-semibold text-slate-700">{label}</p>
+                      </div>
+                    ))}
+                  </div>
+                  <FiveDimRadar scores={analysis.fiveDimensionalScores} />
+                </div>
+              </CardContent>
+            </Card>
+          )}
+
+          {/* Four-Route Evidence Framework */}
+          {analysis.evidenceFramework && (
+            <Card className="border-blue-200">
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Search className="w-5 h-5 text-blue-600" />
+                  四路证据框架
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  {[
+                    { key: 'help_seeking' as const, label: '求助信号', bg: 'bg-blue-50/50', dot: 'text-blue-500' },
+                    { key: 'alternative_seeking' as const, label: '替代信号', bg: 'bg-purple-50/50', dot: 'text-purple-500' },
+                    { key: 'complaints' as const, label: '吐槽信号', bg: 'bg-red-50/50', dot: 'text-red-500' },
+                    { key: 'transaction_intent' as const, label: '交易信号', bg: 'bg-green-50/50', dot: 'text-green-500' },
+                  ].map(({ key, label, bg, dot }) => {
+                    const route = analysis.evidenceFramework![key];
+                    return (
+                      <div key={key} className={`border rounded-lg p-4 ${bg}`}>
+                        <div className="flex items-center justify-between mb-3">
+                          <h4 className="font-semibold text-slate-800 text-sm">{label}</h4>
+                          <Badge variant={
+                            route.strength === 'strong' ? 'green' :
+                            route.strength === 'moderate' ? 'yellow' :
+                            route.strength === 'weak' ? 'red' : 'secondary'
+                          }>
+                            {route.strength === 'strong' ? '强' : route.strength === 'moderate' ? '中' : route.strength === 'weak' ? '弱' : '无'}
+                          </Badge>
+                        </div>
+                        <ul className="space-y-1.5 mb-3">
+                          {route.signals.map((s, i) => (
+                            <li key={i} className="text-xs text-slate-700 flex items-start">
+                              <span className={`mr-1.5 ${dot}`}>*</span>{s}
+                            </li>
+                          ))}
+                        </ul>
+                        {route.examples.length > 0 && (
+                          <div className="border-t pt-2">
+                            <p className="text-xs text-slate-500 mb-1">例子:</p>
+                            {route.examples.map((ex, i) => (
+                              <p key={i} className="text-xs text-slate-600 italic mb-0.5">&ldquo;{ex}&rdquo;</p>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+                <div className="mt-4 p-3 bg-slate-50 rounded-lg border border-slate-200">
+                  <p className="text-sm text-slate-700">
+                    <span className="font-semibold">覆盖度总结：</span>
+                    {analysis.evidenceFramework.coverage_summary}
+                  </p>
+                </div>
+              </CardContent>
+            </Card>
+          )}
 
           {/* Product Design + User Persona */}
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
@@ -370,6 +550,100 @@ export default function ResearchPage() {
               </CardContent>
             </Card>
           </div>
+
+          {/* Counter-Evidence & Kill Criteria */}
+          {analysis.counterEvidence && (
+            <Card className="border-orange-200 bg-orange-50/30">
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2 text-orange-700">
+                  <AlertTriangle className="w-5 h-5" />
+                  反证与终止标准
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-5">
+                <div>
+                  <h4 className="font-semibold text-slate-800 mb-2 text-sm flex items-center gap-1.5">
+                    <XCircle className="w-4 h-4 text-red-600" />
+                    为什么可能失败
+                  </h4>
+                  <ul className="space-y-2">
+                    {analysis.counterEvidence.failure_reasons.map((reason, i) => (
+                      <li key={i} className="text-sm text-slate-700 flex items-start">
+                        <span className="w-5 h-5 bg-red-100 text-red-700 rounded-full flex items-center justify-center text-xs font-bold mr-2 shrink-0">{i + 1}</span>
+                        {reason}
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+
+                <div className="border-t pt-4">
+                  <h4 className="font-semibold text-slate-800 mb-2 text-sm flex items-center gap-1.5">
+                    <ShieldAlert className="w-4 h-4 text-orange-600" />
+                    终止标准 (Kill Criteria)
+                  </h4>
+                  <div className="space-y-2">
+                    {analysis.counterEvidence.kill_criteria.map((criterion, i) => (
+                      <div key={i} className="flex items-start p-2.5 bg-white rounded-lg border border-orange-200">
+                        <Badge variant="red" className="mr-2 mt-0.5 shrink-0 text-xs">STOP</Badge>
+                        <p className="text-sm text-slate-700 flex-1">{criterion}</p>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                <div className="border-t pt-4">
+                  <h4 className="font-semibold text-slate-800 mb-2 text-sm flex items-center gap-1.5">
+                    <AlertTriangle className="w-4 h-4 text-yellow-600" />
+                    反驳论据
+                  </h4>
+                  <ul className="space-y-1.5">
+                    {analysis.counterEvidence.counter_arguments.map((arg, i) => (
+                      <li key={i} className="text-sm text-slate-700 flex items-start p-2 bg-yellow-50 rounded">
+                        <span className="mr-2 text-yellow-600 shrink-0">!</span>
+                        {arg}
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+
+                <div className="border-t pt-4">
+                  <h4 className="font-semibold text-slate-800 mb-2 text-sm flex items-center gap-1.5">
+                    <CheckCircle className="w-4 h-4 text-green-600" />
+                    验证计划
+                  </h4>
+                  <div className="space-y-3">
+                    <div>
+                      <p className="text-xs font-semibold text-slate-600 mb-1.5">下一步行动：</p>
+                      <ol className="space-y-1.5">
+                        {analysis.counterEvidence.validation_plan.next_steps.map((step, i) => (
+                          <li key={i} className="text-sm text-slate-700 flex items-start">
+                            <span className="w-5 h-5 bg-green-100 text-green-700 rounded-full flex items-center justify-center text-xs font-bold mr-2 shrink-0">{i + 1}</span>
+                            {step}
+                          </li>
+                        ))}
+                      </ol>
+                    </div>
+                    <div>
+                      <p className="text-xs font-semibold text-slate-600 mb-1.5">关键假设（需验证）：</p>
+                      <ul className="space-y-1">
+                        {analysis.counterEvidence.validation_plan.critical_assumptions.map((a, i) => (
+                          <li key={i} className="text-xs text-slate-700 flex items-start">
+                            <span className="mr-1.5 text-blue-500">-&gt;</span>{a}
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                    <div className="p-2.5 bg-blue-50 rounded-lg border border-blue-200">
+                      <p className="text-sm text-slate-700">
+                        <span className="font-semibold text-blue-700">验证时间表：</span>
+                        {analysis.counterEvidence.validation_plan.timeline}
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          )}
 
           {/* Opportunities */}
           <Card className="border-amber-200">
