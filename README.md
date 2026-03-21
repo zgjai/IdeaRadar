@@ -4,23 +4,29 @@ AI-powered business opportunity verification engine. Automatically collects prod
 
 ## Features
 
-### V2 - Business Opportunity Verification
-- **SEO-Validated Scoring** - Traffic(40%) x Monetization(35%) x Execution(25%) weighted geometric mean
-- **4-Stage AI Pipeline** - SEO Analysis -> Competitor Analysis -> Monetization Analysis -> Recommendation
-- **Keyword Intelligence** - Automated keyword extraction, expansion, and SEO metrics enrichment
-- **Competitor Discovery** - SERP-based competitor detection with monetization signal analysis
-- **Budget Control** - Daily/monthly/per-API spending limits with real-time monitoring
-- **Multi-Layer Cache** - Memory LRU + SQLite cache to minimize API costs
-- **Opportunity Lifecycle** - discovered -> screening -> seo_validated -> analyzed -> actionable -> archived
+### V2.1 -- xhs-needs-mining Methodology Integration
+- **Five-Dimensional Market Validation** -- Independent demand/pain/pay/buildFit/competitionRisk scoring (0-10)
+- **Four-Route Evidence Framework** -- Help-seeking, alternative-seeking, complaints, transaction intent signal detection
+- **Counter-Evidence & Kill Criteria** -- Devil's advocate analysis with quantifiable stop conditions
+- **Soft-Gate Verification** -- validated/conditional/needs_evidence/skip status with confidence levels
 
-### V1 - Idea Discovery Foundation
-- **Multi-Source Data Collection** - Hacker News, Product Hunt, Google Trends (extensible)
-- **Two-Stage AI Analysis** - Fast screening + deep analysis with configurable models
-- **5-Dimension Scoring** - Trend, Demand, Competition, Feasibility, Growth
-- **S/A/B/C/D Ranking** - Clear quality tiers for quick decision-making
-- **Cost Tracking** - Monitor AI API usage and spending
-- **Local-First** - SQLite database, zero external infrastructure required
-- **Fully Configurable** - AI models, data sources, and schedules via web UI
+### V2 -- Business Opportunity Verification
+- **SEO-Validated Scoring** -- Traffic(40%) x Monetization(35%) x Execution(25%) weighted geometric mean
+- **4-Stage AI Pipeline** -- SEO Analysis -> Competitor Analysis -> Monetization Analysis -> Recommendation
+- **Keyword Intelligence** -- Automated keyword extraction, expansion, and SEO metrics enrichment
+- **Competitor Discovery** -- SERP-based competitor detection with monetization signal analysis
+- **Site Research** -- AI-powered 11-dimension website analysis with multi-strategy content extraction
+- **Budget Control** -- Daily/monthly/per-API spending limits with real-time monitoring
+- **Multi-Layer Cache** -- Memory LRU + SQLite cache to minimize API costs
+
+### V1 -- Idea Discovery Foundation
+- **Multi-Source Data Collection** -- Hacker News, Product Hunt, Google Trends (extensible)
+- **Two-Stage AI Analysis** -- Fast screening + deep analysis with configurable models
+- **5-Dimension Scoring** -- Trend, Demand, Competition, Feasibility, Growth
+- **S/A/B/C/D Ranking** -- Clear quality tiers for quick decision-making
+- **Cost Tracking** -- Monitor AI API usage and spending
+- **Local-First** -- SQLite database, zero external infrastructure required
+- **Fully Configurable** -- AI models, data sources, and schedules via web UI
 
 ## Quick Start
 
@@ -73,28 +79,31 @@ DATABASE_URL=./data/idearadar.db
 npm run dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) in your browser.
+Open [http://localhost:8080](http://localhost:8080) in your browser.
 
 ### Usage Workflow
 
-1. **Collect** - Click "Collect Data" on Dashboard or wait for scheduled collection
-2. **Screen** - Click "Run Analysis" to trigger V1 AI screening on collected ideas
-3. **V2 Deep Analysis** - Click "V2 Deep Analysis" for full SEO + competitor + monetization pipeline
-4. **Review** - Browse Ideas list sorted by opportunity score, filter by rank/source/category
-5. **Keywords** - Explore keyword data in the Keywords Browser page
-6. **Dive Deep** - Click into individual ideas for V2 opportunity scores, SEO data, and AI recommendations
+1. **Collect** -- Click "Collect Data" on Dashboard or wait for scheduled collection
+2. **Screen** -- Click "Run Analysis" to trigger V1 AI screening on collected ideas
+3. **V2 Deep Analysis** -- Click "V2 Deep Analysis" for full SEO + competitor + monetization pipeline
+4. **Review** -- Browse Ideas list sorted by opportunity score, filter by rank/source/category
+5. **Research** -- Use Site Research to analyze any website with 11-dimension AI analysis
+6. **Keywords** -- Explore keyword data in the Keywords Browser page
+7. **Dive Deep** -- Click into individual ideas for V2 opportunity scores, verification status, and counter-evidence
 
 ## Tech Stack
 
 | Layer | Technology |
 |-------|-----------|
-| Framework | Next.js 16 (App Router) |
+| Framework | Next.js 16 (App Router, Turbopack) |
 | Language | TypeScript |
 | Database | SQLite (better-sqlite3) |
 | ORM | Drizzle ORM |
 | Styling | Tailwind CSS v4 |
 | Charts | Recharts |
 | Icons | Lucide React |
+| Toasts | Sonner |
+| Content Extraction | @mozilla/readability, linkedom, turndown |
 | AI Integration | OpenAI-compatible API (OpenRouter, OpenAI, Anthropic, Google, custom) |
 | Scheduler | node-cron |
 
@@ -102,50 +111,58 @@ Open [http://localhost:3000](http://localhost:3000) in your browser.
 
 ```
 src/
-  app/                      # Next.js App Router pages
-    api/                    # REST API endpoints
-      ideas/                # Ideas CRUD
-      stats/                # Dashboard statistics
-      collect/              # Trigger data collection
-      analyze/              # V1 AI analysis
-      analyze-v2/           # V2 full pipeline analysis (SEO + competitors + AI)
-      keywords/             # Keyword browsing API
-      budget/               # Budget monitoring API
-      settings/             # Configuration CRUD
-    ideas/                  # Ideas list & detail pages
-    keywords/               # Keyword browser page
-    settings/               # Settings page
-  components/               # React components
-    ui/                     # Reusable UI primitives
-    dashboard/              # Dashboard widgets
-    ideas/                  # Ideas page components
-    charts/                 # Recharts visualizations
-  lib/                      # Core business logic
-    ai/                     # AI provider, analyzer, prompts, V2 pipeline
-    api/                    # External API clients (DataForSEO, SerpAPI)
-    budget/                 # Budget management and enforcement
-    cache/                  # Multi-layer cache (Memory LRU + SQLite)
-    collectors/             # Data source collectors
-    competitors/            # Competitor discovery and monetization signals
-    keywords/               # Keyword extraction, expansion, enrichment pipeline
-    scoring/                # Scoring engine (V1 + V2)
-    scheduler/              # Cron job scheduler
-    db/                     # Database schema & connection
-    config.ts               # Environment configuration
-data/                       # SQLite database files (gitignored)
-docs/                       # Documentation
+  app/                          # Next.js App Router pages
+    api/                        # REST API endpoints
+      ideas/                    # Ideas CRUD
+      stats/                    # Dashboard statistics
+      collect/                  # Trigger data collection
+      analyze/                  # V1 AI analysis
+      analyze-v2/               # V2 full pipeline analysis
+      keywords/                 # Keyword browsing API
+      budget/                   # Budget monitoring API
+      settings/                 # Configuration CRUD
+      site-research/            # Site research (crawl + analyze)
+        [id]/                   # Site research detail
+    ideas/                      # Ideas list & detail pages
+    keywords/                   # Keyword browser page
+    research/                   # Site research page
+    settings/                   # Settings page
+  components/                   # React components
+    ui/                         # Reusable UI primitives
+    dashboard/                  # Dashboard widgets
+    ideas/                      # Ideas page components
+    charts/                     # Recharts visualizations
+      score-radar.tsx           # V1 5-dimension radar
+      five-dim-radar.tsx        # Five-dimensional market validation radar
+  lib/                          # Core business logic
+    ai/                         # AI provider, analyzer, prompts, V2 pipeline
+    api/                        # External API clients (DataForSEO, SerpAPI)
+    budget/                     # Budget management and enforcement
+    cache/                      # Multi-layer cache (Memory LRU + SQLite)
+    collectors/                 # Data source collectors
+    competitors/                # Competitor discovery and monetization signals
+    keywords/                   # Keyword extraction, expansion, enrichment
+    research/                   # Website crawler + AI site analyzer
+    scoring/                    # Scoring engine (V1 + V2)
+    scheduler/                  # Cron job scheduler
+    db/                         # Database schema & connection
+    config.ts                   # Environment configuration
+  types/                        # TypeScript type declarations
+data/                           # SQLite database files (gitignored)
+docs/                           # Documentation
 ```
 
 ## Documentation
 
 | Document | Description |
 |----------|------------|
-| [Architecture](docs/ARCHITECTURE.md) | System architecture, data flow, and design decisions |
-| [Product Design](docs/PRODUCT.md) | Product vision, features, and scoring methodology |
-| [API Reference](docs/API.md) | Complete REST API documentation |
-| [AI Engine](docs/AI-ENGINE.md) | AI model configuration and analysis pipeline |
+| [Architecture](docs/ARCHITECTURE.md) | System architecture, data flow, design decisions, security |
+| [Product Design](docs/PRODUCT.md) | Product vision, features, scoring methodology, roadmap |
+| [API Reference](docs/API.md) | Complete REST API documentation with examples |
+| [AI Engine](docs/AI-ENGINE.md) | AI pipeline, xhs methodology, prompt engineering |
 | [Data Sources](docs/DATA-SOURCES.md) | Data source integration and collector development |
 | [Development Guide](docs/DEVELOPMENT.md) | Setup, conventions, and contribution guidelines |
+| [Changelog](docs/CHANGELOG.md) | Version history and release notes |
 
 ## License
 

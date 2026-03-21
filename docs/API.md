@@ -5,7 +5,7 @@ All API endpoints are Next.js Route Handlers under `/src/app/api/`. Responses ar
 ## Base URL
 
 ```
-http://localhost:3000/api
+http://localhost:8080/api
 ```
 
 ---
@@ -233,69 +233,6 @@ Trigger AI analysis on unanalyzed ideas.
 
 ---
 
-## Settings
-
-### GET /api/settings
-
-Get all configuration settings.
-
-**Response:**
-
-```json
-{
-  "settings": {
-    "ai.screening.provider": "openrouter",
-    "ai.screening.model": "anthropic/claude-haiku-4.5",
-    "ai.screening.apiKey": "sk-...",
-    "ai.analysis.provider": "openrouter",
-    "ai.analysis.model": "anthropic/claude-sonnet-4.6",
-    "ai.analysis.apiKey": "sk-...",
-    "ai.temperature": "0.3",
-    "ai.dailyBudget": "5",
-    "sources.hackernews.enabled": "true",
-    "sources.producthunt.enabled": "false",
-    "sources.producthunt.apiToken": "",
-    "sources.googleTrends.enabled": "false",
-    "scheduler.collectInterval": "0 */6 * * *",
-    "scheduler.analyzeInterval": "0 */6 * * *"
-  }
-}
-```
-
-### PUT /api/settings
-
-Update configuration settings.
-
-**Request Body:**
-
-```json
-{
-  "settings": {
-    "ai.screening.model": "anthropic/claude-haiku-4.5",
-    "ai.analysis.model": "anthropic/claude-sonnet-4.6",
-    "sources.hackernews.enabled": "true"
-  }
-}
-```
-
-All values must be strings.
-
-**Response:**
-
-```json
-{
-  "success": true,
-  "message": "Updated 3 settings",
-  "updates": [
-    { "key": "ai.screening.model", "value": "anthropic/claude-haiku-4.5" },
-    { "key": "ai.analysis.model", "value": "anthropic/claude-sonnet-4.6" },
-    { "key": "sources.hackernews.enabled", "value": "true" }
-  ]
-}
-```
-
----
-
 ## V2 Analysis
 
 ### POST /api/analyze-v2
@@ -350,9 +287,202 @@ Run the full V2 analysis pipeline (keywords + competitors + monetization + AI 4-
 2. Competitor discovery from SERP results
 3. Monetization signal detection on top 10 competitor domains
 4. AI 4-stage analysis (SEO -> Competitor -> Monetization -> Recommendation)
-5. Score update with opportunityScore (weighted geometric mean)
+5. Recommendation now includes counter-evidence (failure reasons, kill criteria) and verification status
+6. Score update with opportunityScore (weighted geometric mean)
 
 **Note:** This endpoint has `maxDuration: 300` (5 minutes) as the full pipeline can take significant time.
+
+---
+
+## Site Research
+
+### GET /api/site-research
+
+List all site research records, most recent first.
+
+**Response:**
+
+```json
+{
+  "researches": [
+    {
+      "id": 1,
+      "url": "https://example.com",
+      "domain": "example.com",
+      "title": "Example Product",
+      "status": "completed",
+      "createdAt": "2025-03-20T10:00:00.000Z"
+    }
+  ]
+}
+```
+
+Returns the 50 most recent records. Each record includes only summary fields (no full analysis).
+
+### POST /api/site-research
+
+Start a new site research analysis. Crawls the target website and runs AI-powered 11-dimension analysis.
+
+**Request Body:**
+
+```json
+{
+  "url": "https://example.com",
+  "ideaId": "abc123"
+}
+```
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| `url` | string | Yes | Target website URL (auto-prepends `https://` if missing) |
+| `ideaId` | string | No | Optional link to an existing idea record |
+
+**Response (success):**
+
+```json
+{
+  "id": 1,
+  "status": "completed",
+  "analysis": {
+    "overview": {
+      "name": "Product Name",
+      "oneLiner": "One-line description",
+      "category": "SaaS",
+      "coreValue": "Core value proposition",
+      "problemSolved": "Core problem solved"
+    },
+    "productDesign": {
+      "coreFeatures": ["Feature 1", "Feature 2"],
+      "userFlow": "User flow description",
+      "techStackGuess": ["React", "Node.js"],
+      "designStyle": "Design style description",
+      "highlights": ["Highlight 1"]
+    },
+    "userPersona": {
+      "primaryAudience": "Primary audience",
+      "secondaryAudience": "Secondary audience",
+      "useCases": ["Use case 1"],
+      "userNeeds": ["Need 1"],
+      "userJourney": "Journey description"
+    },
+    "businessModel": {
+      "monetization": "SaaS subscription",
+      "pricingStrategy": "Freemium with paid tiers",
+      "revenueStreams": ["Subscriptions"],
+      "marketSize": "Market size estimate"
+    },
+    "strengths": ["Strength 1"],
+    "weaknesses": ["Weakness 1"],
+    "opportunities": {
+      "marketGaps": ["Gap 1"],
+      "improvements": ["Improvement 1"],
+      "inspirations": ["Inspiration 1"]
+    },
+    "fiveDimensionalScores": {
+      "demand_score": 8,
+      "pain_score": 7,
+      "pay_score": 6,
+      "build_fit_score": 9,
+      "competition_risk_score": 5
+    },
+    "evidenceFramework": {
+      "help_seeking": {
+        "signals": ["Signal 1"],
+        "strength": "strong",
+        "examples": ["Example 1"]
+      },
+      "alternative_seeking": {
+        "signals": ["Signal 1"],
+        "strength": "moderate",
+        "examples": ["Example 1"]
+      },
+      "complaints": {
+        "signals": ["Signal 1"],
+        "strength": "strong",
+        "examples": ["Example 1"]
+      },
+      "transaction_intent": {
+        "signals": ["Signal 1"],
+        "strength": "strong",
+        "examples": ["Example 1"]
+      },
+      "coverage_summary": "Coverage summary text"
+    },
+    "counterEvidence": {
+      "failure_reasons": ["Reason 1", "Reason 2"],
+      "kill_criteria": ["Quantifiable stop criterion 1"],
+      "counter_arguments": ["Counter argument 1"],
+      "validation_plan": {
+        "next_steps": ["Step 1"],
+        "critical_assumptions": ["Assumption 1"],
+        "timeline": "Validation timeline"
+      }
+    },
+    "verificationStatus": {
+      "status": "conditional",
+      "reasoning": "Reasoning text",
+      "confidence_level": 65,
+      "evidence_gaps": ["Gap 1"]
+    },
+    "overallRating": 8,
+    "summary": "Summary text"
+  }
+}
+```
+
+**Response (error):**
+
+```json
+{
+  "id": 1,
+  "error": "Error message"
+}
+```
+
+**What happens:**
+1. Validates and normalizes the URL
+2. Creates a `site_researches` record with status `crawling`
+3. Crawls the main page + up to 4 subpages using multi-strategy extraction
+4. Updates status to `analyzing`, runs 11-dimension AI analysis
+5. Saves analysis JSON and updates status to `completed` (or `failed` on error)
+
+**Status Lifecycle:** `crawling` -> `analyzing` -> `completed` | `failed`
+
+### GET /api/site-research/:id
+
+Get a single site research with full analysis data.
+
+**Response:**
+
+```json
+{
+  "id": 1,
+  "url": "https://example.com",
+  "domain": "example.com",
+  "title": "Product Name",
+  "status": "completed",
+  "pageContent": "Crawled page content...",
+  "aiAnalysis": { "...parsed JSON..." },
+  "ideaId": null,
+  "errorMessage": null,
+  "createdAt": "2025-03-20T10:00:00.000Z",
+  "updatedAt": "2025-03-20T10:02:00.000Z"
+}
+```
+
+The `aiAnalysis` field is automatically parsed from JSON string to object. Returns `null` if analysis hasn't completed.
+
+**Error (400):**
+
+```json
+{ "error": "无效的 ID" }
+```
+
+**Error (404):**
+
+```json
+{ "error": "未找到该调研记录" }
+```
 
 ---
 
@@ -429,6 +559,69 @@ Get budget overview with daily/monthly spend and per-API breakdown.
     "serpapi": { "spent": 3.10, "limit": 30 },
     "ai": { "spent": 10.20, "limit": 50 }
   }
+}
+```
+
+---
+
+## Settings
+
+### GET /api/settings
+
+Get all configuration settings.
+
+**Response:**
+
+```json
+{
+  "settings": {
+    "ai.screening.provider": "openrouter",
+    "ai.screening.model": "anthropic/claude-haiku-4.5",
+    "ai.screening.apiKey": "sk-...",
+    "ai.analysis.provider": "openrouter",
+    "ai.analysis.model": "anthropic/claude-sonnet-4.6",
+    "ai.analysis.apiKey": "sk-...",
+    "ai.temperature": "0.3",
+    "ai.dailyBudget": "5",
+    "sources.hackernews.enabled": "true",
+    "sources.producthunt.enabled": "false",
+    "sources.producthunt.apiToken": "",
+    "sources.googleTrends.enabled": "false",
+    "scheduler.collectInterval": "0 */6 * * *",
+    "scheduler.analyzeInterval": "0 */6 * * *"
+  }
+}
+```
+
+### PUT /api/settings
+
+Update configuration settings.
+
+**Request Body:**
+
+```json
+{
+  "settings": {
+    "ai.screening.model": "anthropic/claude-haiku-4.5",
+    "ai.analysis.model": "anthropic/claude-sonnet-4.6",
+    "sources.hackernews.enabled": "true"
+  }
+}
+```
+
+All values must be strings.
+
+**Response:**
+
+```json
+{
+  "success": true,
+  "message": "Updated 3 settings",
+  "updates": [
+    { "key": "ai.screening.model", "value": "anthropic/claude-haiku-4.5" },
+    { "key": "ai.analysis.model", "value": "anthropic/claude-sonnet-4.6" },
+    { "key": "sources.hackernews.enabled", "value": "true" }
+  ]
 }
 ```
 
