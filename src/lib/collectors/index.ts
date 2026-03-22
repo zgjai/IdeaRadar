@@ -1,10 +1,12 @@
 import { db } from '../db';
-import { ideas, collectionLogs } from '../db/schema';
+import { ideas, collectionLogs, settings } from '../db/schema';
 import { generateId } from '../utils';
 import { collectHackerNews } from './hackernews';
 import { collectProductHunt } from './producthunt';
 import { collectGoogleTrends } from './googletrends';
+import { collectReddit } from './reddit';
 import type { CollectedIdea, CollectorResult } from './types';
+import { eq } from 'drizzle-orm';
 
 interface CollectionSummary {
   total: number;
@@ -18,6 +20,30 @@ interface CollectionSummary {
     errors: string[];
   }>;
 }
+
+// --- Settings check ---
+
+const SOURCE_DEFAULTS: Record<string, boolean> = {
+  hackernews: true,
+  producthunt: false,
+  googleTrends: false,
+  reddit: false,
+};
+
+async function isSourceEnabled(source: string): Promise<boolean> {
+  try {
+    const key = `sources.${source}.enabled`;
+    const setting = await db.query.settings.findFirst({
+      where: eq(settings.key, key),
+    });
+    if (!setting) return SOURCE_DEFAULTS[source] ?? false;
+    return setting.value === 'true';
+  } catch {
+    return SOURCE_DEFAULTS[source] ?? false;
+  }
+}
+
+// --- Save & process ---
 
 async function saveIdea(item: CollectedIdea): Promise<'new' | 'duplicate'> {
   try {
@@ -96,15 +122,42 @@ async function logCollection(result: CollectorResult, counts: { new: number; fai
   });
 }
 
+// --- Main orchestrator ---
+
 export async function collectAll(): Promise<CollectionSummary> {
   console.log('Starting collection from all sources...');
 
-  // Run collectors in parallel
-  const results = await Promise.allSettled([
-    collectHackerNews(),
-    collectProductHunt(),
-    collectGoogleTrends(),
+  // Check which sources are enabled
+  const [hnEnabled, phEnabled, gtEnabled, redditEnabled] = await Promise.all([
+    isSourceEnabled('hackernews'),
+    isSourceEnabled('producthunt'),
+    isSourceEnabled('googleTrends'),
+    isSourceEnabled('reddit'),
   ]);
+
+  // Build array of enabled collectors
+  const collectors: Promise<CollectorResult>[] = [];
+  if (hnEnabled) collectors.push(collectHackerNews());
+  if (phEnabled) collectors.push(collectProductHunt());
+  if (gtEnabled) collectors.push(collectGoogleTrends());
+  if (redditEnabled) collectors.push(collectReddit());
+
+  const enabledNames = [
+    hnEnabled && 'HN',
+    phEnabled && 'PH',
+    gtEnabled && 'GT',
+    redditEnabled && 'Reddit',
+  ].filter(Boolean);
+
+  console.log(`Running ${collectors.length} enabled collectors: ${enabledNames.join(', ')}`);
+
+  if (collectors.length === 0) {
+    console.log('No collectors enabled. Enable at least one source in Settings.');
+    return { total: 0, new: 0, duplicate: 0, failed: 0, sources: [] };
+  }
+
+  // Run collectors in parallel
+  const results = await Promise.allSettled(collectors);
 
   const summary: CollectionSummary = {
     total: 0,

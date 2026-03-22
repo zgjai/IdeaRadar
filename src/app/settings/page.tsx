@@ -33,6 +33,7 @@ interface Settings {
     hackernews: { enabled: boolean };
     producthunt: { enabled: boolean; apiToken: string };
     googleTrends: { enabled: boolean };
+    reddit: { enabled: boolean };
   };
   scheduler: {
     collectionInterval: string;
@@ -65,6 +66,7 @@ const DEFAULT_SETTINGS: Settings = {
     hackernews: { enabled: true },
     producthunt: { enabled: false, apiToken: '' },
     googleTrends: { enabled: false },
+    reddit: { enabled: false },
   },
   scheduler: {
     collectionInterval: '0 */6 * * *',
@@ -90,6 +92,7 @@ function mergeSettings(saved: Record<string, string>): Settings {
   if (saved['sources.producthunt.enabled']) s.dataSources.producthunt.enabled = saved['sources.producthunt.enabled'] === 'true';
   if (saved['sources.producthunt.apiToken']) s.dataSources.producthunt.apiToken = saved['sources.producthunt.apiToken'];
   if (saved['sources.googleTrends.enabled']) s.dataSources.googleTrends.enabled = saved['sources.googleTrends.enabled'] === 'true';
+  if (saved['sources.reddit.enabled']) s.dataSources.reddit.enabled = saved['sources.reddit.enabled'] === 'true';
   if (saved['scheduler.collectInterval']) s.scheduler.collectionInterval = saved['scheduler.collectInterval'];
   if (saved['scheduler.analyzeInterval']) s.scheduler.analysisInterval = saved['scheduler.analyzeInterval'];
   return s;
@@ -141,6 +144,7 @@ export default function SettingsPage() {
         'sources.producthunt.enabled': String(settings.dataSources.producthunt.enabled),
         'sources.producthunt.apiToken': settings.dataSources.producthunt.apiToken,
         'sources.googleTrends.enabled': String(settings.dataSources.googleTrends.enabled),
+        'sources.reddit.enabled': String(settings.dataSources.reddit.enabled),
         'scheduler.collectInterval': settings.scheduler.collectionInterval,
         'scheduler.analyzeInterval': settings.scheduler.analysisInterval,
       };
@@ -546,6 +550,31 @@ export default function SettingsPage() {
               Requires SerpAPI key (configured above). Collects trending tech searches as ideas.
             </p>
           )}
+
+          <div className="space-y-2">
+            <div className="flex items-center justify-between">
+              <label className="text-sm font-medium text-slate-700">Reddit</label>
+              <input
+                type="checkbox"
+                checked={settings.dataSources.reddit.enabled}
+                onChange={(e) =>
+                  setSettings({
+                    ...settings,
+                    dataSources: {
+                      ...settings.dataSources,
+                      reddit: { enabled: e.target.checked },
+                    },
+                  })
+                }
+                className="w-4 h-4"
+              />
+            </div>
+            {settings.dataSources.reddit.enabled && (
+              <p className="text-xs text-slate-500 pl-1">
+                Collects from r/SaaS, r/startups, r/SideProject, r/selfhosted, r/Entrepreneur. No API key required.
+              </p>
+            )}
+          </div>
         </CardContent>
       </Card>
 

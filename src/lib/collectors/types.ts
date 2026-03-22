@@ -2,7 +2,7 @@ export interface CollectedIdea {
   title: string;
   description: string;
   url: string;
-  source: 'hackernews' | 'producthunt' | 'google_trends';
+  source: 'hackernews' | 'producthunt' | 'google_trends' | 'reddit';
   sourceId: string;
   sourceScore: number;
   sourceComments: number;

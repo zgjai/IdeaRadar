@@ -41,6 +41,14 @@ function calculateTrendScore(idea: Idea): number {
     // 100K+ searches = very hot, 10K+ = trending
     const trafficScore = Math.min((srcScore / 500000) * 100, 100);
     score += trafficScore;
+  } else if (idea.source === 'reddit') {
+    // Reddit: 300+ upvotes is very hot, 100+ is trending
+    const redditScore = Math.min((srcScore / 300) * 100, 100);
+    score += redditScore * 0.7;
+
+    // Comments indicate discussion quality
+    const commentScore = Math.min((srcComments / 80) * 100, 100);
+    score += commentScore * 0.3;
   }
 
   // Recency boost: ideas discovered in last 7 days get boost
