@@ -306,6 +306,18 @@ function initializeDatabase() {
     `);
 
     // =========================================================================
+    // V2.2 Migration: Strategy Analysis fields
+    // =========================================================================
+    const v22Columns: [string, string][] = [
+      ['ai_strategy_analysis', 'TEXT'],
+      ['discovery_strategy', 'TEXT'],
+      ['automation_potential', 'REAL DEFAULT 0'],
+    ];
+    for (const [col, type] of v22Columns) {
+      addColumnIfNotExists(sqlite, 'ideas', col, type);
+    }
+
+    // =========================================================================
     // Indexes (V1 + V2)
     // =========================================================================
     sqlite.exec(`
@@ -333,6 +345,7 @@ function initializeDatabase() {
       CREATE INDEX IF NOT EXISTS idx_trend_discoveries_keyword ON trend_discoveries(keyword);
       CREATE INDEX IF NOT EXISTS idx_trend_discoveries_status ON trend_discoveries(validation_status);
       CREATE INDEX IF NOT EXISTS idx_trend_discoveries_seed ON trend_discoveries(seed_word);
+      CREATE INDEX IF NOT EXISTS idx_ideas_discovery_strategy ON ideas(discovery_strategy);
     `);
   } catch (error) {
     console.error('Failed to initialize database:', error);

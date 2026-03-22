@@ -5,7 +5,7 @@
 IdeaRadar uses a multi-stage AI pipeline to evaluate product ideas and analyze websites. The system has three analysis modes:
 
 1. **V1 Pipeline** -- Screening + deep analysis for idea scoring
-2. **V2 Pipeline** -- 4-stage SEO-driven analysis with counter-evidence and verification
+2. **V2 Pipeline** -- 5-stage SEO-driven analysis with strategy evaluation, counter-evidence and verification
 3. **Site Research** -- 11-dimension website analysis with xhs-needs-mining methodology
 
 The system is provider-agnostic -- any OpenAI-compatible chat completions endpoint works.
@@ -151,11 +151,11 @@ AI_DAILY_BUDGET=5
 
 **DB Fields Updated:** `aiPainPoint`, `aiTargetUsers`, `aiFeatures`, `aiCompetitors`, `aiTechFeasibility`, `demandScore`, `competitionScore`, `feasibilityScore`, `growthScore`, `analyzedAt`
 
-## V2 Four-Stage Pipeline
+## V2 Five-Stage Pipeline
 
 **Source file:** `src/lib/ai/pipeline-v2.ts`
 
-The V2 pipeline runs after keyword and competitor data has been collected. It performs 4 sequential AI analysis stages, each building on the context from previous stages.
+The V2 pipeline runs after keyword and competitor data has been collected. It performs 5 sequential AI analysis stages, each building on the context from previous stages. V2.2 added the Strategy & Productization Analysis stage, integrating a five-strategy discovery methodology (forums, keywords, competitor gaps, shadow cloning, service productization).
 
 ### Context Assembly
 
@@ -226,9 +226,81 @@ Before running AI stages, `buildContext()` assembles all available data:
 - 50-69: Low CPC or unclear monetization path
 - <50: Monetization is difficult
 
-### Stage 4: Recommendation (with Counter-Evidence)
+### Stage 4: Strategy & Productization Analysis (V2.2)
 
-**Prompt:** Synthesize all analyses into an actionable recommendation with devil's advocate analysis.
+**Prompt:** Classify the idea's discovery strategy, evaluate service productization (SOAP) potential, identify shadow clone opportunities, and score on a 5-circle validation model.
+
+This stage integrates the "five-strategy discovery methodology":
+
+| Strategy | Key | Description |
+|----------|-----|-------------|
+| A | `community_pain` | Forum/community pain points (Reddit, HN, PH) |
+| B | `keyword_opportunity` | Search trends and keyword demand (Google Trends, SEO) |
+| C | `competitor_gap` | Competitive gaps found via 1-star reviews, pricing analysis |
+| D | `shadow_clone` | Improving existing successful products ("精准剪裁+痛点补洞") |
+| E | `service_productization` | Automating Fiverr/Upwork manual services into SaaS (SOAP model) |
+
+**Output:**
+```json
+{
+  "discoveryStrategy": {
+    "primary": "service_productization",
+    "secondary": "shadow_clone",
+    "reasoning": "Why this strategy classification"
+  },
+  "soapEvaluation": {
+    "hasExistingService": true,
+    "serviceExamples": ["Fiverr Logo Design", "Upwork Brand Identity"],
+    "processSteps": ["Step 1: Collect requirements", "Step 2: Generate designs", "Step 3: Deliver assets"],
+    "automationPotential": 85,
+    "automationApis": ["OpenAI API", "Canva API", "Replicate"],
+    "packagingModel": "tiered",
+    "soapScore": 82
+  },
+  "shadowClone": {
+    "bestTarget": "Competitor X",
+    "targetWeaknesses": ["Expensive pricing", "Poor mobile experience"],
+    "differentiationAngle": "AI-first approach with 10x speed",
+    "cloneComplexity": "medium",
+    "estimatedAdvantage": "5x faster delivery at 1/3 price"
+  },
+  "fiveCircleValidation": {
+    "marketDemand": 8,
+    "toolFeasibility": 7,
+    "differentiation": 6,
+    "businessViability": 8,
+    "personalFit": 7
+  }
+}
+```
+
+**SOAP Model (Screen -> Optimize -> Automate -> Package):**
+
+| Phase | What to Do | Validation Criteria |
+|-------|-----------|-------------------|
+| Screen | Find Fiverr services with 300+ monthly orders | Service steps can be decomposed into <= 5 standard steps |
+| Optimize | Analyze service workflow, find automatable 80% | 80% of process achievable with API/tools |
+| Automate | Build with vibe coding + APIs | End-to-end flow works from submission to delivery |
+| Package | SaaS product with subscription pricing | 3-5 paying users, monthly retention >= 60% |
+
+**SOAP Score Criteria:**
+- 80+: High-frequency service exists with 80%+ automation potential (e.g., Looka = Logo design)
+- 50-79: Service exists but automation has some challenges
+- 30-49: Service exists but low automation ratio
+- <30: No clear service benchmark or hard to productize
+
+**Five-Circle Validation (0-10 each):**
+- Market Demand: Pain intensity x user scale
+- Tool Feasibility: Can be built with existing tech stack (AI API + low-code)
+- Differentiation: Unique angle vs competitors
+- Business Viability: Willingness to pay x pricing space x retention
+- Personal Fit: Solo dev / small team can execute (tech + ops + acquisition)
+
+**DB Fields Updated:** `discoveryStrategy`, `automationPotential`, `aiStrategyAnalysis` (JSON)
+
+### Stage 5: Recommendation (with Counter-Evidence)
+
+**Prompt:** Synthesize all analyses (including strategy data) into an actionable recommendation with devil's advocate analysis. Now enhanced with strategy context: discovery strategy classification, SOAP score, automation potential, shadow clone target, differentiation angle, and five-circle validation scores.
 
 **Output:**
 ```json
@@ -270,7 +342,7 @@ Before running AI stages, `buildContext()` assembles all available data:
 
 ### Opportunity Score Calculation
 
-After all 4 stages complete, the opportunity score is calculated using a **weighted geometric mean**:
+After all 5 stages complete, the opportunity score is calculated using a **weighted geometric mean**:
 
 ```
 opportunityScore = (traffic/100)^0.4 x (monetization/100)^0.35 x (execution/100)^0.25 x 100
@@ -394,7 +466,7 @@ ai_cost_logs (
   output_tokens INTEGER,
   cost_usd REAL,        -- Calculated from model pricing table
   idea_id TEXT,         -- Which idea this call was for
-  analysis_type TEXT,   -- 'screening', 'deep', 'seo', 'competitor', 'monetization', 'recommendation', 'site-research'
+  analysis_type TEXT,   -- 'screening', 'deep', 'seo', 'competitor', 'monetization', 'strategy', 'recommendation', 'site-research'
   created_at TEXT
 )
 ```
@@ -442,7 +514,8 @@ V2 prompts are defined inline in `src/lib/ai/pipeline-v2.ts`. They:
 - Include the full assembled context (keywords, SERP data, competitors, signals)
 - Request structured JSON output with specific field names
 - Each stage prompt references results from previous stages for coherent analysis
-- Stage 4 (recommendation) includes counter-evidence and verification requirements with detailed rubrics
+- Stage 4 (strategy) evaluates discovery strategy, SOAP potential, shadow clone targets, and 5-circle validation
+- Stage 5 (recommendation) includes strategy context, counter-evidence and verification requirements with detailed rubrics
 
 ### Site Research Prompts
 

@@ -14,6 +14,7 @@ src/lib/collectors/
   types.ts          # Shared interfaces
   hackernews.ts     # Hacker News collector
   producthunt.ts    # Product Hunt collector
+  googletrends.ts   # Google Trends collector
   index.ts          # Orchestrator (collectAll)
 ```
 
@@ -118,9 +119,26 @@ Settings keys:
 
 ## Google Trends
 
-**Status:** Planned (not yet implemented)
+**Status:** Active (requires SerpAPI key)
 
-**Concept:** Monitor trending search terms in technology/startup categories and cross-reference with other data sources.
+**Source file:** `src/lib/collectors/googletrends.ts`
+
+**API:** SerpAPI Google Trends endpoints
+
+### How It Works
+
+1. Calls SerpAPI `engine=google_trends_trending_now` for daily trending searches
+2. Filters for tech/startup-related trends using keyword matching (TECH_KEYWORDS set)
+3. Converts to `CollectedIdea` format with Google Trends explore URL and traffic-based score
+
+### Trend Mining (/trends page)
+
+Additionally, the **Trend Mining** feature (`src/app/trends/page.tsx`) provides a seed-word-to-rising-query discovery workflow:
+
+1. User provides seed words (e.g., "AI", "SaaS", "generator")
+2. System calls `getRisingQueries()` for each seed via SerpAPI (`engine=google_trends`, `data_type=RELATED_QUERIES`)
+3. Enriches top results with SEO data from DataForSEO (volume, KD, CPC)
+4. Stores in `trend_discoveries` table for validation and conversion to ideas
 
 Settings key: `sources.googleTrends.enabled`
 
@@ -277,6 +295,20 @@ The V2 pipeline works without any SEO APIs configured:
 - AI analysis runs with reduced context (lower confidence)
 
 When only one API is configured, the system uses it as the primary source. When both are configured, DataForSEO is preferred for keywords and SerpAPI is used as fallback for SERP data.
+
+## Strategy-Source Mapping (V2.2)
+
+The V2.2 five-strategy discovery methodology maps data sources to strategies:
+
+| Strategy | Primary Data Sources | How IdeaRadar Uses It |
+|----------|---------------------|----------------------|
+| A. Community Pain | HN collector, PH collector | Automated collection from forums/communities |
+| B. Keyword Opportunity | Google Trends collector, Trend Mining, DataForSEO | Rising queries, search volume, keyword expansion |
+| C. Competitor Gap | SerpAPI SERP results, Site Research crawler | Competitor discovery, pricing analysis, weakness identification |
+| D. Shadow Clone | V2 Competitor Analysis stage, Site Research AI | AI identifies best clone targets and their weaknesses |
+| E. Service Productization | V2.2 Strategy Analysis stage (SOAP evaluation) | AI evaluates automation potential against Fiverr/Upwork benchmarks |
+
+Each idea is classified into one of these strategies during the V2 analysis pipeline (Stage 4: Strategy Analysis). The classification is stored in `ideas.discovery_strategy` and displayed on the idea detail page.
 
 ## Collection Logs
 

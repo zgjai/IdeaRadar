@@ -34,6 +34,7 @@ export async function GET(
     const aiCompetitorAnalysis = idea.aiCompetitorAnalysis ? JSON.parse(idea.aiCompetitorAnalysis) : null;
     const aiMonetizationAnalysis = idea.aiMonetizationAnalysis ? JSON.parse(idea.aiMonetizationAnalysis) : null;
     const aiRecommendation = idea.aiRecommendation ? JSON.parse(idea.aiRecommendation) : null;
+    const aiStrategyAnalysis = idea.aiStrategyAnalysis ? JSON.parse(idea.aiStrategyAnalysis) : null;
 
     return NextResponse.json({
       ...idea,
@@ -42,6 +43,7 @@ export async function GET(
       aiSeoAnalysis,
       aiCompetitorAnalysis,
       aiMonetizationAnalysis,
+      aiStrategyAnalysis,
       aiRecommendation,
       trendHistory: history,
     });

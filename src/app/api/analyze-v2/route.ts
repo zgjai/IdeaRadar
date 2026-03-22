@@ -64,7 +64,7 @@ async function analyzeOne(ideaId: string) {
     await detectMonetizationSignals(comp.domain);
   }
 
-  // Step 4: AI 4-stage analysis
+  // Step 4: AI 5-stage analysis (SEO → Competitor → Monetization → Strategy → Recommendation)
   console.log('[V2 Analyze] Step 4: AI Analysis');
   const analysis = await runV2Analysis(ideaId);
 
@@ -89,6 +89,8 @@ async function analyzeOne(ideaId: string) {
           executionScore: analysis.executionScore,
           opportunityScore: analysis.opportunityScore,
           verdict: analysis.recommendation.verdict,
+          discoveryStrategy: analysis.strategy.discoveryStrategy.primary,
+          soapScore: analysis.strategy.soapEvaluation.soapScore,
         }
       : null,
   };

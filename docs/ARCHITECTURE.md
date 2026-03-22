@@ -5,8 +5,9 @@
 IdeaRadar is a full-stack Next.js application designed as a **business opportunity verification engine** for indie developers. It follows a local-first architecture: all data stays on your machine with zero external infrastructure beyond AI and SEO API calls. The system has evolved through three major phases:
 
 - **V1** (idea discovery): multi-source collection + two-stage AI analysis + 5-dimension scoring
-- **V2** (opportunity verification): SEO keyword validation + competitor discovery + monetization signals + 4-stage AI pipeline
+- **V2** (opportunity verification): SEO keyword validation + competitor discovery + monetization signals + 5-stage AI pipeline
 - **V2.1** (methodology upgrade): xhs-needs-mining methodology integration with five-dimensional market validation, four-route evidence framework, counter-evidence analysis, and soft-gate verification
+- **V2.2** (five-strategy methodology): five-strategy discovery classification (community pain / keyword opportunity / competitor gap / shadow clone / service productization), SOAP service-productization evaluation, shadow clone analysis, five-circle validation model, upgraded to 5-stage AI pipeline
 
 ## 2. System Overview
 
@@ -24,7 +25,7 @@ IdeaRadar is a full-stack Next.js application designed as a **business opportuni
 │  │                      Core Business Logic                              │  │
 │  │  ┌──────────┐ ┌──────────┐ ┌────────────┐ ┌───────────────┐          │  │
 │  │  │Collectors│ │ V1 AI    │ │ V2 Pipeline│ │ Scoring Engine│          │  │
-│  │  │          │ │ Analyzer │ │ (4-stage)  │ │ (V1+V2)      │          │  │
+│  │  │          │ │ Analyzer │ │ (5-stage)  │ │ (V1+V2)      │          │  │
 │  │  └────┬─────┘ └────┬─────┘ └──────┬─────┘ └───────────────┘          │  │
 │  │       │             │              │                                   │  │
 │  │  ┌────┘    ┌────────┘    ┌─────────┘                                  │  │
@@ -233,7 +234,7 @@ Step 3: detectMonetizationSignals()
     └── Analyze top 10 competitors for pricing/ads/affiliate signals
     │
     ▼
-Step 4: runV2Analysis()  (4-stage AI pipeline)
+Step 4: runV2Analysis()  (5-stage AI pipeline)
     ├── SEO Analysis               ──▶ trafficScore
     ├── Competitor Analysis         ──▶ competitionIntensity
     ├── Monetization Analysis       ──▶ monetizationScore
@@ -411,7 +412,7 @@ src/
       provider.ts               # AI provider abstraction + retry logic
       analyzer.ts               # V1 screening + deep analysis
       prompts.ts                # V1 prompt templates
-      pipeline-v2.ts            # V2 4-stage AI pipeline + scoring
+      pipeline-v2.ts            # V2 5-stage AI pipeline + scoring
     api/
       dataforseo.ts             # DataForSEO client
       serpapi.ts                # SerpAPI client

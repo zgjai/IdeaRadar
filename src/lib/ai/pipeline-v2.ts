@@ -64,10 +64,42 @@ export interface OpportunityRecommendation {
   };
 }
 
+export interface StrategyAnalysis {
+  discoveryStrategy: {
+    primary: 'community_pain' | 'keyword_opportunity' | 'competitor_gap' | 'shadow_clone' | 'service_productization';
+    secondary: string | null;
+    reasoning: string;
+  };
+  soapEvaluation: {
+    hasExistingService: boolean;
+    serviceExamples: string[];
+    processSteps: string[];
+    automationPotential: number;  // 0-100
+    automationApis: string[];
+    packagingModel: string;
+    soapScore: number;            // 0-100
+  };
+  shadowClone: {
+    bestTarget: string;
+    targetWeaknesses: string[];
+    differentiationAngle: string;
+    cloneComplexity: 'low' | 'medium' | 'high';
+    estimatedAdvantage: string;
+  };
+  fiveCircleValidation: {
+    marketDemand: number;        // 0-10
+    toolFeasibility: number;     // 0-10
+    differentiation: number;     // 0-10
+    businessViability: number;   // 0-10
+    personalFit: number;         // 0-10
+  };
+}
+
 export interface V2AnalysisResult {
   seo: SEOAnalysis;
   competitor: CompetitorAnalysis;
   monetization: MonetizationAnalysis;
+  strategy: StrategyAnalysis;
   recommendation: OpportunityRecommendation;
   trafficScore: number;
   monetizationScoreValue: number;
@@ -257,12 +289,118 @@ ${signals || '暂无竞品变现数据'}
 返回纯 JSON，不要其他文字。`;
 }
 
+function strategyAnalysisPrompt(
+  ctx: AnalysisContext,
+  seo: SEOAnalysis,
+  comp: CompetitorAnalysis
+): string {
+  const compSummary = comp.topCompetitors
+    .slice(0, 5)
+    .map((c) => `- ${c.name} (${c.domain}): 优势=[${c.strengths.join(', ')}], 弱点=[${c.weaknesses.join(', ')}]`)
+    .join('\n');
+
+  return `你是一位SaaS产品策略专家，精通五大创意发现策略和服务产品化方法论。
+
+产品创意：${ctx.idea.title}
+描述：${ctx.idea.description}
+来源：${ctx.idea.source}
+
+SEO概况：流量评分 ${seo.trafficScore}/100, 竞争水平 ${seo.competitionLevel}
+竞品概况：
+${compSummary || '暂无竞品数据'}
+差异化机会：${comp.differentiationOpportunities.join(', ') || '暂无'}
+
+## 分析框架
+
+### 五大发现策略（选择最匹配的）
+A. community_pain (社区痛点): 来自Reddit/HN/PH等社区的用户吐槽和需求
+B. keyword_opportunity (关键词机会): 通过搜索趋势、Google Trends发现的搜索需求
+C. competitor_gap (竞品洞察): 通过分析竞品1星差评、定价空白发现的机会
+D. shadow_clone (暗影复刻): 改进现有成功产品——精准剪裁+痛点补洞（不是抄代码）
+E. service_productization (服务产品化): 将Fiverr/Upwork等高频人工服务自动化为SaaS
+
+### SOAP模型（服务产品化评估）
+- Screen: 是否存在对标的高频人工服务（月订单300+）？
+- Optimize: 服务流程能否拆解为3-5个标准步骤？
+- Automate: 多少比例可以用API/AI自动化（目标80%）？
+- Package: 能否包装为订阅制SaaS产品？
+
+### 暗影复刻分析
+- 最值得复刻改进的竞品是谁？
+- 该竞品的具体弱点在哪？
+- 如何用"极致聚焦"策略做差异化？
+
+### 五维验证模型（每项0-10分）
+1. 市场需求: 痛点强度 × 用户规模
+2. 工具可行性: 能否用现有技术栈（AI API + 低代码）快速实现
+3. 差异化优势: 相对竞品的独特切入点
+4. 商业模式: 付费意愿 × 定价空间 × 复购率
+5. 个人匹配: 独立开发者/小团队能否执行（技术+运营+获客）
+
+请以 JSON 格式返回：
+{
+  "discoveryStrategy": {
+    "primary": "community_pain/keyword_opportunity/competitor_gap/shadow_clone/service_productization",
+    "secondary": "可选的第二策略或null",
+    "reasoning": "为什么判断为该策略"
+  },
+  "soapEvaluation": {
+    "hasExistingService": true/false,
+    "serviceExamples": ["Fiverr/Upwork上的对标服务名称"],
+    "processSteps": ["步骤1: ...", "步骤2: ...", "步骤3: ..."],
+    "automationPotential": 0-100,
+    "automationApis": ["可用的API/工具，如OpenAI API, Canva API"],
+    "packagingModel": "subscription/usage-based/tiered",
+    "soapScore": 0-100
+  },
+  "shadowClone": {
+    "bestTarget": "最值得复刻的竞品名称",
+    "targetWeaknesses": ["具体弱点1", "具体弱点2"],
+    "differentiationAngle": "差异化切入角度",
+    "cloneComplexity": "low/medium/high",
+    "estimatedAdvantage": "预期能获得的竞争优势"
+  },
+  "fiveCircleValidation": {
+    "marketDemand": 0-10,
+    "toolFeasibility": 0-10,
+    "differentiation": 0-10,
+    "businessViability": 0-10,
+    "personalFit": 0-10
+  }
+}
+
+评分参考：
+- soapScore 80+: 存在高频服务且80%+可自动化（如Looka之于Logo设计）
+- soapScore 50-79: 有对标服务但自动化有一定挑战
+- soapScore 30-49: 服务存在但自动化比例低
+- soapScore <30: 无明确对标服务或难以产品化
+- fiveCircleValidation: 每项≥7为优秀，≥5为及格，<5为薄弱
+
+典型案例参考：
+- Looka (SOAP 95): Fiverr Logo设计 → AI生成Logo+品牌套件
+- Grammarly (SOAP 90): 人工文案校对 → 实时语法检查+写作建议
+- Canva (SOAP 85): 设计师外包 → 模板化设计+拖拽编辑
+- Calendly (SOAP 80): 人工预约安排 → 自动化日程协调
+
+返回纯 JSON，不要其他文字。`;
+}
+
 function recommendationPrompt(
   ctx: AnalysisContext,
   seo: SEOAnalysis,
   comp: CompetitorAnalysis,
-  monet: MonetizationAnalysis
+  monet: MonetizationAnalysis,
+  strategy: StrategyAnalysis
 ): string {
+  const strategyLabel: Record<string, string> = {
+    community_pain: '社区痛点',
+    keyword_opportunity: '关键词机会',
+    competitor_gap: '竞品洞察',
+    shadow_clone: '暗影复刻',
+    service_productization: '服务产品化',
+  };
+  const fc = strategy.fiveCircleValidation;
+
   return `基于以下综合分析，生成最终可执行建议。
 
 产品创意：${ctx.idea.title}
@@ -270,6 +408,8 @@ function recommendationPrompt(
 SEO分析：流量评分 ${seo.trafficScore}/100, 预估月流量 ${seo.estimatedMonthlyTraffic}, 难度 ${seo.seoDifficulty}/100
 竞争分析：竞争强度 ${comp.competitionIntensity}/100, 市场结构 ${comp.marketStructure}
 变现分析：变现评分 ${monet.monetizationScore}/100, 推荐模式 ${monet.recommendedModel}, 盈亏平衡 ${monet.breakEvenTraffic}访问/月
+策略分析：发现策略=${strategyLabel[strategy.discoveryStrategy.primary] || strategy.discoveryStrategy.primary}, SOAP评分=${strategy.soapEvaluation.soapScore}/100, 自动化潜力=${strategy.soapEvaluation.automationPotential}%, 暗影复刻目标=${strategy.shadowClone.bestTarget}, 差异化=${strategy.shadowClone.differentiationAngle}
+五维验证：需求${fc.marketDemand}/10, 可行性${fc.toolFeasibility}/10, 差异化${fc.differentiation}/10, 商业${fc.businessViability}/10, 匹配${fc.personalFit}/10
 
 请以 JSON 格式返回：
 {
@@ -378,12 +518,27 @@ export async function runV2Analysis(ideaId: string): Promise<V2AnalysisResult | 
     monetization = getDefaultMonetization();
   }
 
-  // Stage 4: Recommendation
-  console.log('[V2 Pipeline] Stage 4: Recommendation');
+  // Stage 4: Strategy & Productization Analysis
+  console.log('[V2 Pipeline] Stage 4: Strategy Analysis');
+  let strategy: StrategyAnalysis;
+  try {
+    const stratResponse = await provider.callWithRetry(
+      [{ role: 'user', content: strategyAnalysisPrompt(ctx, seo, competitor) }],
+      ideaId,
+      'strategy'
+    );
+    strategy = parseJSON<StrategyAnalysis>(stratResponse) || getDefaultStrategy();
+  } catch (error) {
+    console.warn('[V2 Pipeline] Strategy analysis failed, using defaults:', error);
+    strategy = getDefaultStrategy();
+  }
+
+  // Stage 5: Recommendation (enhanced with strategy context)
+  console.log('[V2 Pipeline] Stage 5: Recommendation');
   let recommendation: OpportunityRecommendation;
   try {
     const recResponse = await provider.callWithRetry(
-      [{ role: 'user', content: recommendationPrompt(ctx, seo, competitor, monetization) }],
+      [{ role: 'user', content: recommendationPrompt(ctx, seo, competitor, monetization, strategy) }],
       ideaId,
       'recommendation'
     );
@@ -414,7 +569,10 @@ export async function runV2Analysis(ideaId: string): Promise<V2AnalysisResult | 
       aiSeoAnalysis: JSON.stringify(seo),
       aiCompetitorAnalysis: JSON.stringify(competitor),
       aiMonetizationAnalysis: JSON.stringify(monetization),
+      aiStrategyAnalysis: JSON.stringify(strategy),
       aiRecommendation: JSON.stringify(recommendation),
+      discoveryStrategy: strategy.discoveryStrategy.primary,
+      automationPotential: strategy.soapEvaluation.automationPotential,
       estimatedTraffic: seo.estimatedMonthlyTraffic || null,
       status: 'analyzed',
       analyzedAt: new Date().toISOString(),
@@ -423,13 +581,14 @@ export async function runV2Analysis(ideaId: string): Promise<V2AnalysisResult | 
     .where(eq(ideas.id, ideaId));
 
   console.log(
-    `[V2 Pipeline] Completed: traffic=${trafficScore}, monetization=${monetizationScoreValue}, execution=${executionScore}, opportunity=${opportunityScore}`
+    `[V2 Pipeline] Completed: traffic=${trafficScore}, monetization=${monetizationScoreValue}, execution=${executionScore}, opportunity=${opportunityScore}, strategy=${strategy.discoveryStrategy.primary}, soap=${strategy.soapEvaluation.soapScore}`
   );
 
   return {
     seo,
     competitor,
     monetization,
+    strategy,
     recommendation,
     trafficScore,
     monetizationScoreValue,
@@ -506,6 +665,39 @@ function getDefaultMonetization(): MonetizationAnalysis {
     alternativeRevenue: [],
     breakEvenTraffic: 0,
     monetizationScore: 50,
+  };
+}
+
+function getDefaultStrategy(): StrategyAnalysis {
+  return {
+    discoveryStrategy: {
+      primary: 'keyword_opportunity',
+      secondary: null,
+      reasoning: 'AI 分析未能完成，默认归类为关键词机会。',
+    },
+    soapEvaluation: {
+      hasExistingService: false,
+      serviceExamples: [],
+      processSteps: [],
+      automationPotential: 0,
+      automationApis: [],
+      packagingModel: 'subscription',
+      soapScore: 0,
+    },
+    shadowClone: {
+      bestTarget: '待分析',
+      targetWeaknesses: [],
+      differentiationAngle: '待分析',
+      cloneComplexity: 'medium',
+      estimatedAdvantage: '待分析',
+    },
+    fiveCircleValidation: {
+      marketDemand: 5,
+      toolFeasibility: 5,
+      differentiation: 5,
+      businessViability: 5,
+      personalFit: 5,
+    },
   };
 }
 

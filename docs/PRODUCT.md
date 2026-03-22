@@ -16,13 +16,13 @@ Solo developers and small teams who:
 
 ## Core User Journeys
 
-### Journey 1: Idea Discovery Pipeline (V1 -> V2)
+### Journey 1: Idea Discovery Pipeline (V1 -> V2 -> V2.2)
 ```
-Discover ──▶ Screen ──▶ SEO Validate ──▶ Competitor Scan ──▶ Monetize Check ──▶ AI Verdict ──▶ Action
-   │            │            │                  │                  │                │            │
-   │ Automated  │  Fast AI   │  Keyword data    │  SERP analysis   │  Pricing/ads   │ 4-stage    │ Build
-   │ collection │  screening │  Volume/CPC/KD   │  Real players    │  detection     │ pipeline   │ or Skip
-   │ from web   │  (Haiku)   │  (DataForSEO)    │  (SERP APIs)     │                │ (Sonnet)   │
+Discover ──▶ Screen ──▶ SEO Validate ──▶ Competitor Scan ──▶ Monetize Check ──▶ Strategy Eval ──▶ AI Verdict ──▶ Action
+   │            │            │                  │                  │                 │                │            │
+   │ Automated  │  Fast AI   │  Keyword data    │  SERP analysis   │  Pricing/ads    │ 5-Strategy     │ 5-stage    │ Build
+   │ collection │  screening │  Volume/CPC/KD   │  Real players    │  detection      │ SOAP + Clone   │ pipeline   │ or Skip
+   │ from web   │  (Haiku)   │  (DataForSEO)    │  (SERP APIs)     │                 │ 5-Circle Valid │ (Sonnet)   │
 ```
 
 ### Journey 2: Site Research (Competitor/Product Analysis)
@@ -68,6 +68,9 @@ Deep-dive view for individual ideas:
 - **AI Recommendation** -- Product form, MVP features, traffic strategy, monetization path, risks
 - **Verification Status** -- Color-coded banner (validated/conditional/needs_evidence/skip) with confidence level
 - **Counter-Evidence** -- Failure risks, kill criteria (STOP badges), counter arguments
+- **Discovery Strategy Classification** (V2.2) -- Badge-labeled strategy (A-E) with reasoning + 5-circle validation progress bars
+- **SOAP Evaluation** (V2.2) -- Service productization score, automation potential bar, process steps, API suggestions
+- **Shadow Clone Analysis** (V2.2) -- Best competitor target, weaknesses, differentiation angle, complexity badge
 - **V2 Analysis Trigger** -- One-click "Run V2 Analysis" button per idea
 - **Radar Chart** -- 5-dimension visual comparison (trend, demand, competition, feasibility, growth)
 - **Trend Line** -- Historical score evolution over time
@@ -205,9 +208,59 @@ Each idea tracks:
 | V1 Scores | trendScore, demandScore, competitionScore, feasibilityScore, growthScore | V1 Scoring Engine |
 | SEO Data | primaryKeyword, targetSearchVolume, targetKeywordDifficulty, targetCpc, estimatedTraffic, competitorCount | V2 Keyword Pipeline |
 | V2 Scores | trafficScore, monetizationScore, executionScore, opportunityScore | V2 AI Pipeline |
-| V2 AI Analysis | aiSeoAnalysis, aiCompetitorAnalysis, aiMonetizationAnalysis, aiRecommendation (all JSON) | V2 4-Stage Pipeline |
+| V2 AI Analysis | aiSeoAnalysis, aiCompetitorAnalysis, aiMonetizationAnalysis, aiStrategyAnalysis, aiRecommendation (all JSON) | V2 5-Stage Pipeline |
+| V2.2 Strategy | discoveryStrategy, automationPotential | V2 Strategy Analysis Stage |
 | Ranking | finalScore (V1), opportunityScore (V2), rankCategory, confidence | Scoring Engine |
 | Timestamps | discoveredAt, analyzedAt, seoValidatedAt, createdAt, updatedAt | System |
+
+## Five-Strategy Discovery Methodology (V2.2)
+
+The V2.2 upgrade integrates a comprehensive five-strategy framework for SaaS idea discovery and validation, derived from the methodology article "如何找到并验证有利可图的产品idea".
+
+### Five Discovery Strategies
+
+| Strategy | Code | IdeaRadar Coverage | Method |
+|----------|------|-------------------|--------|
+| A. Forums/Communities | `community_pain` | HN + PH collectors | Find pain points in community discussions ("I wish there was...", "why isn't there...") |
+| B. Keywords/Trends | `keyword_opportunity` | Google Trends + Keyword pipeline + Trend Mining | Discover demand via search volume, rising queries, "alternative to X" patterns |
+| C. Competitive Analysis | `competitor_gap` | Site Research + Competitor discovery | Analyze 1-star reviews, pricing gaps, underserved niches |
+| D. Shadow Cloning | `shadow_clone` | V2.2 AI analysis stage | Study successful products, find weaknesses, "精准剪裁+痛点补洞" (precision tailoring + pain point patching) |
+| E. Service Productization | `service_productization` | V2.2 SOAP evaluation | Turn high-frequency Fiverr/Upwork services into SaaS ("抄热门服务 + 自动化80% + SaaS产品化") |
+
+### SOAP Model (Service Productization)
+
+**Screen -> Optimize -> Automate -> Package**
+
+The SOAP model evaluates whether a product idea could be built by automating an existing manual service:
+
+1. **Screen**: Find Fiverr/Upwork services with 300+ monthly orders
+2. **Optimize**: Decompose service into 3-5 standard steps, identify automatable portions
+3. **Automate**: Build using AI APIs + low-code tools (target 80% automation)
+4. **Package**: Wrap as SaaS with subscription pricing
+
+**Typical Success Stories:**
+
+| Product | Service Benchmark | Automation Highlight | Result |
+|---------|------------------|---------------------|--------|
+| Looka | Fiverr Logo Design | AI-generated Logo + Brand Kit | Solo founder, 7-figure annual revenue |
+| Grammarly | Human Proofreading | Real-time grammar check + writing suggestions | $13B valuation |
+| Canva | Designer Outsourcing | Template design + drag-and-drop editor | $40B valuation |
+| Calendly | Manual Scheduling | Automated calendar coordination | $100M+ annual revenue |
+| Loom | Video Production Outsourcing | One-click recording + auto-share | Acquired by Atlassian |
+
+### Five-Circle Validation Model
+
+Each idea is scored on 5 independent dimensions (0-10):
+
+| Dimension | What It Measures | High Score (7-10) | Low Score (1-4) |
+|-----------|-----------------|-------------------|-----------------|
+| Market Demand | Pain intensity x user scale | Frequent, urgent need | Rare or weak demand |
+| Tool Feasibility | Can be built with AI API + low-code | 2-4 week MVP | Needs large team |
+| Differentiation | Unique angle vs competitors | Clear niche advantage | Me-too product |
+| Business Viability | Willingness to pay x pricing space | Proven payment model | Hard to monetize |
+| Personal Fit | Solo dev can execute (tech + ops) | Full-stack capable | Needs specialized team |
+
+The intersection of all 5 dimensions at high scores = "有利可图的SaaS产品" (profitable SaaS product).
 
 ## Future Roadmap
 

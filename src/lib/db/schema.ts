@@ -53,7 +53,12 @@ export const ideas = sqliteTable('ideas', {
   aiSeoAnalysis: text('ai_seo_analysis'), // JSON
   aiCompetitorAnalysis: text('ai_competitor_analysis'), // JSON
   aiMonetizationAnalysis: text('ai_monetization_analysis'), // JSON
+  aiStrategyAnalysis: text('ai_strategy_analysis'), // JSON: StrategyAnalysis (V2.2)
   aiRecommendation: text('ai_recommendation'), // JSON
+
+  // V2.2 Strategy fields
+  discoveryStrategy: text('discovery_strategy'), // community_pain/keyword_opportunity/competitor_gap/shadow_clone/service_productization
+  automationPotential: real('automation_potential'), // 0-100, SOAP automation %
 
   // Ranking
   rankCategory: text('rank_category'), // S/A/B/C/D
