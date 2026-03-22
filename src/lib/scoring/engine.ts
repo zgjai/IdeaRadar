@@ -49,6 +49,14 @@ function calculateTrendScore(idea: Idea): number {
     // Comments indicate discussion quality
     const commentScore = Math.min((srcComments / 80) * 100, 100);
     score += commentScore * 0.3;
+  } else if (idea.source === 'github') {
+    // GitHub: 1000+ stars in < 30 days = very hot
+    const starScore = Math.min((srcScore / 1000) * 100, 100);
+    score += starScore * 0.8;
+
+    // Open issues as engagement proxy
+    const issueScore = Math.min((srcComments / 100) * 100, 100);
+    score += issueScore * 0.2;
   }
 
   // Recency boost: ideas discovered in last 7 days get boost

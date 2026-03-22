@@ -2,10 +2,11 @@
 
 ## Overview
 
-IdeaRadar uses two categories of external data sources:
+IdeaRadar uses three categories of external data sources:
 
-1. **Idea Collectors** - Collect raw product ideas from community platforms (Hacker News, Reddit, Product Hunt, Google Trends)
+1. **Idea Collectors** - Collect raw product ideas from community platforms (Hacker News, Reddit, Product Hunt, Google Trends, GitHub)
 2. **SEO APIs (V2)** - Enrich ideas with keyword data, SERP analysis, and competitor intelligence (DataForSEO, SerpAPI)
+3. **Proactive Discovery (V2.4)** - Mine keywords and freelance services for untapped product opportunities
 
 All collectors share a **Demand Signal Filter** (V2.3) that pre-screens content for genuine product demand signals before saving to the database.
 
@@ -19,6 +20,7 @@ src/lib/collectors/
   producthunt.ts    # Product Hunt collector
   googletrends.ts   # Google Trends collector
   reddit.ts         # Reddit collector (V2.3)
+  github.ts         # GitHub Trending collector (V2.4)
   index.ts          # Orchestrator (collectAll)
 ```
 
@@ -30,10 +32,10 @@ interface CollectedIdea {
   title: string;
   description: string;
   url: string;
-  source: string;           // 'hackernews' | 'producthunt' | 'google_trends' | 'reddit'
+  source: string;           // 'hackernews' | 'producthunt' | 'google_trends' | 'reddit' | 'github'
   sourceId: string;         // Original platform ID
-  sourceScore: number;      // Upvotes/votes
-  sourceComments: number;   // Comment count
+  sourceScore: number;      // Upvotes/votes/stars
+  sourceComments: number;   // Comment count / issues
   discoveredAt: string;     // ISO timestamp
   metadata?: Record<string, unknown>;
 }
@@ -93,8 +95,9 @@ The demand signal filter is a keyword-based pre-screening system that scores con
 | Hacker News | 20 | Higher noise floor |
 | Reddit | 15 | Better subreddit targeting |
 | Product Hunt | 10 | Pre-curated by PH |
+| GitHub | 15 | Combined with star threshold |
 
-Items below threshold are filtered out unless they have high source scores (e.g., HN points >= 50, Reddit score >= 20).
+Items below threshold are filtered out unless they have high source scores (e.g., HN points >= 50, Reddit score >= 20, GitHub stars >= 100).
 
 ### Signal Metadata
 
@@ -192,6 +195,69 @@ Disabled by default. Toggle via Settings page.
 
 Settings key: `sources.reddit.enabled`
 
+## GitHub Trending (V2.4)
+
+**Status:** Active (no auth required)
+
+**Source file:** `src/lib/collectors/github.ts`
+
+**API:** GitHub Search API (`https://api.github.com/search/repositories`)
+
+### How It Works
+
+Uses two search queries to find recently created repos gaining rapid stars:
+
+1. **Trending repos** — Repos created in last 30 days with 50+ stars, sorted by stars descending (30 results)
+2. **Product repos** — Repos created in last 14 days with 20+ stars and product-related topics (`saas`, `tool`, `cli`, `automation`, `self-hosted`), 30 results
+
+### Filtering Logic
+
+Keeps repos that look like **products** (not libraries/tutorials):
+
+- Must have a `description` field
+- Excludes repos with topics: `awesome`, `tutorial`, `course`, `learning`, `interview`, `cheatsheet`, `roadmap`, `guide`, `documentation`, `dotfiles`, `config`, `template`, `boilerplate`, `starter`
+- Excludes repos with names starting with `awesome-` or ending with `-tutorial`
+- Positive signals: has `homepage` URL (shipped product) OR has product topics (`saas`, `tool`, `cli`, `automation`, `app`, `desktop-app`, `web-app`, `productivity`, `devtools`, `self-hosted`, `api`, `platform`, `dashboard`, `monitoring`, `analytics`, `editor`, `generator`, `builder`, `low-code`, `no-code`, `ai`, `llm`, `chatbot`)
+- Falls through if stars >= 100 (strong community signal)
+- Applies demand signal filter on name + description
+- Keeps if: stars >= 100 OR demand signal score >= 15
+
+### Data Conversion
+
+| GitHub Field | IdeaRadar Field | Notes |
+|-------------|-----------------|-------|
+| `full_name` + `description` | `title` | Format: "owner/repo: description" |
+| `description` | `description` | |
+| `html_url` | `url` | |
+| `stargazers_count` | `sourceScore` | Stars |
+| `open_issues_count` | `sourceComments` | Engagement proxy |
+| `created_at` | `discoveredAt` | |
+| `language`, `topics`, `homepage`, `forks_count`, `license` | `metadata` | |
+
+### Rate Limiting
+
+- Unauthenticated: 10 requests/minute for search API
+- 2 queries total, well within limits
+- 15-second timeout per request
+
+### Scoring Formula
+
+```
+starScore = min((stars / 1000) * 100, 100)    // 1000+ stars = max
+issueScore = min((issues / 100) * 100, 100)   // 100+ issues = max
+trendScore = starScore * 0.8 + issueScore * 0.2
+```
+
+### Configuration
+
+Disabled by default. Toggle via Settings page.
+
+```env
+# No API key required -- uses public GitHub Search API
+```
+
+Settings key: `sources.github.enabled`
+
 ## Product Hunt
 
 **Status:** Placeholder (requires API token)
@@ -246,6 +312,127 @@ Additionally, the **Trend Mining** feature (`src/app/trends/page.tsx`) provides 
 4. Stores in `trend_discoveries` table for validation and conversion to ideas
 
 Settings key: `sources.googleTrends.enabled`
+
+## Keyword Reverse Discovery (V2.4)
+
+**Status:** Active (requires DataForSEO)
+
+**Source file:** `src/app/api/keyword-discovery/route.ts`
+
+**UI:** `/keywords` page → Discovery tab
+
+### Overview
+
+Proactively mines for keyword patterns that indicate unserved product demand, instead of waiting for ideas to appear organically.
+
+### Three Discovery Modes
+
+#### Mode: Alternatives
+
+Finds "X alternative" keywords with high commercial intent — someone is unhappy with product X and searching for alternatives.
+
+- **Default seeds:** notion, slack, trello, airtable, zapier, mailchimp, hubspot, asana, clickup, monday, figma, canva, jira, intercom, zendesk
+- **Keywords generated per seed:** `"[seed] alternative"`, `"[seed] alternative free"`, `"better than [seed]"`
+- **Scoring:** `opportunity = volume * (1 - difficulty/100) * max(cpc, 0.1)`, normalized 0-100
+
+#### Mode: How-to
+
+Finds "how to X" keywords indicating manual processes ripe for automation/tooling.
+
+- **Default seeds:** automate, generate, convert, extract, scrape, schedule, transcribe, translate, summarize, analyze, monitor, optimize, migrate, deploy, backup
+- **Keywords generated per seed:** `"how to [verb]"`, `"[verb] tool"`, `"[verb] automation"`
+- **Scoring:** Same opportunity formula
+
+#### Mode: Best Tools
+
+Finds "best X tool" keywords showing product comparison intent in specific categories.
+
+- **Default seeds:** email marketing, project management, crm, invoicing, video editing, social media, seo, analytics, design, customer support, accounting, hr, inventory, scheduling, backup
+- **Keywords generated per seed:** `"best [category] tool"`, `"best [category] software"`, `"[category] tools for small business"`
+- **Scoring:** Same opportunity formula
+
+### API Endpoint
+
+```
+POST /api/keyword-discovery
+Body: { mode: 'alternatives' | 'how-to' | 'best-tools', seeds?: string[] }
+
+GET /api/keyword-discovery
+Returns existing keyword discovery results from trend_discoveries table
+```
+
+### Result Storage
+
+Saves top 50 results to `trend_discoveries` table:
+- `source: 'keyword_discovery'`
+- `seedWord`: the seed product/verb/category
+- `growthRate`: "Opp: {score}" text
+- `growthNumeric`: opportunity score numeric (0-100)
+- SEO fields: `searchVolume`, `difficulty`, `cpc` from DataForSEO
+
+## Service Mining / SOAP Strategy (V2.4)
+
+**Status:** Active (requires DataForSEO)
+
+**Source file:** `src/app/api/service-mining/route.ts`
+
+**UI:** `/trends` page → Service Mining tab
+
+### Overview
+
+Identifies popular freelance services (Fiverr/Upwork) that can be productized into SaaS tools. Since Fiverr has no public API, uses a keyword-based approach: measure search demand for freelance services vs existing tool supply.
+
+### How It Works
+
+1. **Service Category Seeds** (20 default categories):
+   ```
+   logo design, video editing, social media management, seo services,
+   web scraping, data entry, transcription, translation,
+   bookkeeping, resume writing, email copywriting, chatbot development,
+   wordpress development, mobile app design, photo editing,
+   voice over, podcast editing, content writing, lead generation, virtual assistant
+   ```
+
+2. **Keyword Generation** — For each category, creates 4 keywords:
+   - `"fiverr [category]"` — marketplace demand signal
+   - `"[category] tool"` — existing product search
+   - `"[category] software"` — existing product search
+   - `"[category] automation"` — automation intent
+
+3. **SEO Data Fetch** — Batch call DataForSEO `getKeywordData()` for all keywords
+
+4. **SOAP Score Calculation**:
+   ```
+   soapScore = (fiverrVolume * 0.4) + (automationVolume * 0.4) + (toolVolume * 0.2)
+   productizationGap = fiverrVolume - max(toolVolume, softwareVolume)
+   ```
+   - High SOAP score = high demand for both the service and automation
+   - Positive gap = more people searching for the service than existing tools
+
+### API Endpoint
+
+```
+POST /api/service-mining
+Body: { categories?: string[] }
+
+GET /api/service-mining
+Returns existing service mining results from trend_discoveries table
+```
+
+### Result Storage
+
+Saves to `trend_discoveries` table:
+- `source: 'service_mining'`
+- `keyword`: the service category
+- `metadata`: JSON with `fiverrVolume`, `toolVolume`, `softwareVolume`, `automationVolume`, `soapScore`, `productizationGap`, `avgCpc`, `avgDifficulty`
+- `growthRate`: "SOAP: {score}" text
+- `growthNumeric`: SOAP score numeric
+
+### UI Features
+
+- Custom category input (leave empty for defaults)
+- Results table with: Service, Fiverr Volume, Tool Volume, Automation Volume, Gap, SOAP Score, CPC, KD
+- Saved discoveries table with convert-to-idea functionality
 
 ## Adding a New Collector
 
@@ -362,17 +549,17 @@ The V2 pipeline works without any SEO APIs configured:
 
 When only one API is configured, the system uses it as the primary source. When both are configured, DataForSEO is preferred for keywords and SerpAPI is used as fallback for SERP data.
 
-## Strategy-Source Mapping (V2.2)
+## Strategy-Source Mapping (V2.4)
 
 The V2.2 five-strategy discovery methodology maps data sources to strategies:
 
 | Strategy | Primary Data Sources | How IdeaRadar Uses It |
 |----------|---------------------|----------------------|
 | A. Community Pain | HN collector, PH collector, **Reddit collector** | Automated collection from forums/communities |
-| B. Keyword Opportunity | Google Trends collector, Trend Mining, DataForSEO | Rising queries, search volume, keyword expansion |
+| B. Keyword Opportunity | Google Trends collector, Trend Mining, DataForSEO, **Keyword Discovery** | Rising queries, search volume, keyword expansion, opportunity mining |
 | C. Competitor Gap | SerpAPI SERP results, Site Research crawler | Competitor discovery, pricing analysis, weakness identification |
-| D. Shadow Clone | V2 Competitor Analysis stage, Site Research AI | AI identifies best clone targets and their weaknesses |
-| E. Service Productization | V2.2 Strategy Analysis stage (SOAP evaluation) | AI evaluates automation potential against Fiverr/Upwork benchmarks |
+| D. Shadow Clone | V2 Competitor Analysis stage, Site Research AI, **GitHub Trending** | AI identifies best clone targets; GitHub finds trending open-source products |
+| E. Service Productization | V2.2 Strategy Analysis stage (SOAP evaluation), **Service Mining** | AI evaluates automation potential; keyword-based SOAP analysis of freelance services |
 
 Each idea is classified into one of these strategies during the V2 analysis pipeline (Stage 4: Strategy Analysis). The classification is stored in `ideas.discovery_strategy` and displayed on the idea detail page.
 
@@ -382,7 +569,7 @@ Every collection run is logged to `collection_logs`:
 
 | Field | Description |
 |-------|-------------|
-| `source` | Collector name (e.g., `hackernews`, `reddit`) |
+| `source` | Collector name (e.g., `hackernews`, `reddit`, `github`) |
 | `status` | `success`, `failed`, or `partial` |
 | `items_count` | Number of new ideas inserted |
 | `error_message` | Error details if any |

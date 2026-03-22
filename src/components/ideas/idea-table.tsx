@@ -33,8 +33,13 @@ export function IdeaTable({ ideas }: IdeaTableProps) {
   const getSourceColor = (source: string) => {
     const colors: Record<string, string> = {
       'HN': 'bg-orange-100 text-orange-700',
+      'hackernews': 'bg-orange-100 text-orange-700',
       'PH': 'bg-teal-100 text-teal-700',
+      'producthunt': 'bg-teal-100 text-teal-700',
       'GT': 'bg-blue-100 text-blue-700',
+      'google_trends': 'bg-blue-100 text-blue-700',
+      'reddit': 'bg-red-100 text-red-700',
+      'github': 'bg-purple-100 text-purple-700',
     };
     return colors[source] || 'bg-slate-100 text-slate-700';
   };

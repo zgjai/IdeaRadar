@@ -5,6 +5,7 @@ import { collectHackerNews } from './hackernews';
 import { collectProductHunt } from './producthunt';
 import { collectGoogleTrends } from './googletrends';
 import { collectReddit } from './reddit';
+import { collectGitHub } from './github';
 import type { CollectedIdea, CollectorResult } from './types';
 import { eq } from 'drizzle-orm';
 
@@ -28,6 +29,7 @@ const SOURCE_DEFAULTS: Record<string, boolean> = {
   producthunt: false,
   googleTrends: false,
   reddit: false,
+  github: false,
 };
 
 async function isSourceEnabled(source: string): Promise<boolean> {
@@ -128,11 +130,12 @@ export async function collectAll(): Promise<CollectionSummary> {
   console.log('Starting collection from all sources...');
 
   // Check which sources are enabled
-  const [hnEnabled, phEnabled, gtEnabled, redditEnabled] = await Promise.all([
+  const [hnEnabled, phEnabled, gtEnabled, redditEnabled, githubEnabled] = await Promise.all([
     isSourceEnabled('hackernews'),
     isSourceEnabled('producthunt'),
     isSourceEnabled('googleTrends'),
     isSourceEnabled('reddit'),
+    isSourceEnabled('github'),
   ]);
 
   // Build array of enabled collectors
@@ -141,12 +144,14 @@ export async function collectAll(): Promise<CollectionSummary> {
   if (phEnabled) collectors.push(collectProductHunt());
   if (gtEnabled) collectors.push(collectGoogleTrends());
   if (redditEnabled) collectors.push(collectReddit());
+  if (githubEnabled) collectors.push(collectGitHub());
 
   const enabledNames = [
     hnEnabled && 'HN',
     phEnabled && 'PH',
     gtEnabled && 'GT',
     redditEnabled && 'Reddit',
+    githubEnabled && 'GitHub',
   ].filter(Boolean);
 
   console.log(`Running ${collectors.length} enabled collectors: ${enabledNames.join(', ')}`);
