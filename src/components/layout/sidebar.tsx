@@ -3,12 +3,13 @@
 import { useState } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { LayoutDashboard, Lightbulb, Settings, Radar, Search, Globe, Menu, X } from 'lucide-react';
+import { LayoutDashboard, Lightbulb, Settings, Radar, Search, Globe, Menu, X, TrendingUp } from 'lucide-react';
 
 const navItems = [
   { href: '/', label: '仪表盘', icon: LayoutDashboard },
   { href: '/ideas', label: '创意库', icon: Lightbulb },
   { href: '/research', label: '网站调研', icon: Globe },
+  { href: '/trends', label: '趋势挖掘', icon: TrendingUp },
   { href: '/keywords', label: '关键词', icon: Search },
   { href: '/settings', label: '设置', icon: Settings },
 ];

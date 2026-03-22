@@ -232,6 +232,34 @@ export const siteResearches = sqliteTable('site_researches', {
 });
 
 // =============================================================================
+// V4: Trend Mining (New Word Discovery)
+// =============================================================================
+
+export const trendDiscoveries = sqliteTable('trend_discoveries', {
+  id: text('id').primaryKey(),
+  keyword: text('keyword').notNull(),
+  seedWord: text('seed_word'),
+  source: text('source').notNull().default('google_trends_rising'), // google_trends_rising / manual
+  growthRate: text('growth_rate'), // "+2,800%", "Breakout"
+  growthNumeric: integer('growth_numeric').default(0), // parsed numeric value
+
+  // SEO validation data (enriched via DataForSEO)
+  searchVolume: integer('search_volume'),
+  difficulty: real('difficulty'),
+  cpc: real('cpc'),
+  serpCompetition: text('serp_competition'), // weak/mixed/strong
+
+  // Status
+  validationStatus: text('validation_status').notNull().default('pending'), // pending/validated/rejected/converted
+  ideaId: text('idea_id').references(() => ideas.id),
+
+  // Extra data
+  metadata: text('metadata'), // JSON: SERP results, related queries, etc.
+  createdAt: text('created_at').notNull().default(sql`CURRENT_TIMESTAMP`),
+  updatedAt: text('updated_at').notNull().default(sql`CURRENT_TIMESTAMP`),
+});
+
+// =============================================================================
 // Type Exports
 // =============================================================================
 
@@ -251,3 +279,5 @@ export type IdeaKeyword = typeof ideaKeywords.$inferSelect;
 export type ApiCacheEntry = typeof apiCache.$inferSelect;
 export type ApiCostLog = typeof apiCostLogs.$inferSelect;
 export type SiteResearch = typeof siteResearches.$inferSelect;
+export type TrendDiscovery = typeof trendDiscoveries.$inferSelect;
+export type NewTrendDiscovery = typeof trendDiscoveries.$inferInsert;

@@ -20,6 +20,28 @@ export interface SerpAPIResult {
   serpFeatures: string[];
 }
 
+// ─── Google Trends Types ──────────────────────────────────────────────────
+
+export interface TrendingSearch {
+  title: string;
+  traffic: string;           // e.g., "500K+", "200K+"
+  trafficNumeric: number;    // parsed numeric value
+  relatedArticles: Array<{
+    title: string;
+    url: string;
+    source: string;
+    snippet: string;
+  }>;
+}
+
+export interface RisingQuery {
+  query: string;
+  value: number;             // growth percentage (e.g., 2800)
+  formattedValue: string;    // e.g., "+2,800%", "Breakout"
+  isBreakout: boolean;       // true if labeled as breakout/暴增
+  link: string;              // Google Trends explore link
+}
+
 const COST_PER_SEARCH = 0.01; // $50/month for 5000 searches
 
 export class SerpAPIClient {
@@ -75,6 +97,103 @@ export class SerpAPIClient {
     };
   }
 
+  /**
+   * Fetch daily trending searches from Google Trends
+   */
+  async getTrendingSearches(geo = 'US'): Promise<TrendingSearch[]> {
+    if (!this.isConfigured) throw new Error('SerpAPI not configured');
+
+    const response = await axios.get('https://serpapi.com/search.json', {
+      params: {
+        engine: 'google_trends_trending_now',
+        frequency: 'daily',
+        geo,
+        api_key: this.apiKey,
+      },
+      timeout: 30000,
+    });
+
+    await this.logCost('google_trends_trending', 'trends_trending');
+
+    const dailySearches = response.data?.daily_searches || [];
+    const results: TrendingSearch[] = [];
+
+    for (const day of dailySearches) {
+      for (const search of day.searches || []) {
+        const trafficStr = String(search.search_volume || '0');
+        const trafficNumeric = this.parseTraffic(trafficStr);
+
+        results.push({
+          title: search.query || '',
+          traffic: trafficStr,
+          trafficNumeric,
+          relatedArticles: (search.articles || []).slice(0, 3).map(
+            (a: Record<string, unknown>) => ({
+              title: String(a.title || ''),
+              url: String(a.link || ''),
+              source: String(a.source || ''),
+              snippet: String(a.snippet || ''),
+            })
+          ),
+        });
+      }
+    }
+
+    return results;
+  }
+
+  /**
+   * Fetch rising related queries for a seed keyword from Google Trends
+   */
+  async getRisingQueries(keyword: string, timeRange = 'now 7-d', geo = ''): Promise<RisingQuery[]> {
+    if (!this.isConfigured) throw new Error('SerpAPI not configured');
+
+    const params: Record<string, string> = {
+      engine: 'google_trends',
+      q: keyword,
+      data_type: 'RELATED_QUERIES',
+      date: timeRange,
+      api_key: this.apiKey,
+    };
+    if (geo) params.geo = geo;
+
+    const response = await axios.get('https://serpapi.com/search.json', {
+      params,
+      timeout: 30000,
+    });
+
+    await this.logCost(`rising:${keyword}`, 'trends_related');
+
+    const rising = response.data?.related_queries?.rising || [];
+
+    return rising.map((item: Record<string, unknown>) => {
+      const extracted = item.extracted_value as number || 0;
+      const formatted = String(item.value || '');
+      const isBreakout = formatted.toLowerCase().includes('breakout') ||
+                          formatted.includes('暴增') ||
+                          extracted >= 5000;
+
+      return {
+        query: String(item.query || ''),
+        value: extracted,
+        formattedValue: formatted,
+        isBreakout,
+        link: String(item.link || `https://trends.google.com/trends/explore?q=${encodeURIComponent(String(item.query || ''))}`),
+      };
+    });
+  }
+
+  private parseTraffic(traffic: string): number {
+    const cleaned = traffic.replace(/[,+]/g, '').trim();
+    const match = cleaned.match(/^(\d+(?:\.\d+)?)\s*([KkMm])?/);
+    if (!match) return 0;
+    const num = parseFloat(match[1]);
+    const unit = (match[2] || '').toUpperCase();
+    if (unit === 'M') return num * 1000000;
+    if (unit === 'K') return num * 1000;
+    return num;
+  }
+
   private extractFeatures(data: Record<string, unknown>): string[] {
     const features: string[] = [];
     if (data.answer_box) features.push('featured_snippet');
@@ -88,11 +207,11 @@ export class SerpAPIClient {
     return features;
   }
 
-  private async logCost(keyword: string) {
+  private async logCost(keyword: string, endpoint = 'search') {
     try {
       await db.insert(apiCostLogs).values({
         apiName: 'serpapi',
-        endpoint: 'search',
+        endpoint,
         itemCount: 1,
         costUsd: COST_PER_SEARCH,
         metadata: JSON.stringify({ keyword }),

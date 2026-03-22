@@ -541,6 +541,11 @@ export default function SettingsPage() {
               className="w-4 h-4"
             />
           </div>
+          {settings.dataSources.googleTrends.enabled && (
+            <p className="text-xs text-slate-500 pl-1">
+              Requires SerpAPI key (configured above). Collects trending tech searches as ideas.
+            </p>
+          )}
         </CardContent>
       </Card>
 

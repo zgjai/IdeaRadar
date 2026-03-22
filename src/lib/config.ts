@@ -31,6 +31,10 @@ export const config = {
       enabled: false,
     },
   },
+  trendMining: {
+    seedWords: ['AI', 'SaaS', 'generator', 'maker', 'tool'],
+    geo: '', // empty = global
+  },
   scheduler: {
     collectInterval: process.env.COLLECT_INTERVAL || '0 */6 * * *', // Every 6 hours
     analyzeInterval: process.env.ANALYZE_INTERVAL || '0 * * * *', // Every hour

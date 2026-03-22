@@ -36,6 +36,11 @@ function calculateTrendScore(idea: Idea): number {
 
     const commentScore = Math.min((srcComments / 50) * 100, 100);
     score += commentScore * 0.2;
+  } else if (idea.source === 'google_trends') {
+    // Google Trends: sourceScore is traffic volume (numeric)
+    // 100K+ searches = very hot, 10K+ = trending
+    const trafficScore = Math.min((srcScore / 500000) * 100, 100);
+    score += trafficScore;
   }
 
   // Recency boost: ideas discovered in last 7 days get boost

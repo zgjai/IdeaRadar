@@ -3,6 +3,7 @@ import { ideas, collectionLogs } from '../db/schema';
 import { generateId } from '../utils';
 import { collectHackerNews } from './hackernews';
 import { collectProductHunt } from './producthunt';
+import { collectGoogleTrends } from './googletrends';
 import type { CollectedIdea, CollectorResult } from './types';
 
 interface CollectionSummary {
@@ -102,6 +103,7 @@ export async function collectAll(): Promise<CollectionSummary> {
   const results = await Promise.allSettled([
     collectHackerNews(),
     collectProductHunt(),
+    collectGoogleTrends(),
   ]);
 
   const summary: CollectionSummary = {

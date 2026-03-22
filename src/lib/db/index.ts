@@ -269,6 +269,43 @@ function initializeDatabase() {
     `);
 
     // =========================================================================
+    // V3: Site Research + V4: Trend Mining
+    // =========================================================================
+    sqlite.exec(`
+      CREATE TABLE IF NOT EXISTS site_researches (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        url TEXT NOT NULL,
+        domain TEXT NOT NULL,
+        title TEXT,
+        status TEXT NOT NULL DEFAULT 'pending',
+        page_content TEXT,
+        ai_analysis TEXT,
+        error_message TEXT,
+        idea_id TEXT REFERENCES ideas(id),
+        created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+        updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
+      );
+
+      CREATE TABLE IF NOT EXISTS trend_discoveries (
+        id TEXT PRIMARY KEY,
+        keyword TEXT NOT NULL,
+        seed_word TEXT,
+        source TEXT NOT NULL DEFAULT 'google_trends_rising',
+        growth_rate TEXT,
+        growth_numeric INTEGER DEFAULT 0,
+        search_volume INTEGER,
+        difficulty REAL,
+        cpc REAL,
+        serp_competition TEXT,
+        validation_status TEXT NOT NULL DEFAULT 'pending',
+        idea_id TEXT REFERENCES ideas(id),
+        metadata TEXT,
+        created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+        updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
+      );
+    `);
+
+    // =========================================================================
     // Indexes (V1 + V2)
     // =========================================================================
     sqlite.exec(`
@@ -293,6 +330,9 @@ function initializeDatabase() {
       CREATE INDEX IF NOT EXISTS idx_api_cache_key ON api_cache(cache_key);
       CREATE INDEX IF NOT EXISTS idx_api_cache_expires ON api_cache(expires_at);
       CREATE INDEX IF NOT EXISTS idx_api_cost_logs_created ON api_cost_logs(created_at);
+      CREATE INDEX IF NOT EXISTS idx_trend_discoveries_keyword ON trend_discoveries(keyword);
+      CREATE INDEX IF NOT EXISTS idx_trend_discoveries_status ON trend_discoveries(validation_status);
+      CREATE INDEX IF NOT EXISTS idx_trend_discoveries_seed ON trend_discoveries(seed_word);
     `);
   } catch (error) {
     console.error('Failed to initialize database:', error);
