@@ -51,16 +51,19 @@ function sleep(ms: number): Promise<void> {
 
 async function fetchSubreddit(
   subreddit: string,
-  sortType: 'score' | 'created_utc',
-  limit = 25
+  limit = 100
 ): Promise<RedditPost[]> {
+  // Arctic Shift only supports sort_type: "default" | "created_utc"
+  // Fetch recent posts and sort/filter by score locally
+  const weekAgo = Math.floor(Date.now() / 1000) - 7 * 86400;
+
   const response = await axios.get<ArcticShiftResponse>(ARCTIC_SHIFT_API, {
     params: {
       subreddit,
       limit,
       sort: 'desc',
-      sort_type: sortType,
-      after: '7d', // Last 7 days
+      sort_type: 'created_utc',
+      after: weekAgo,
     },
     timeout: REQUEST_TIMEOUT,
   });
@@ -69,18 +72,7 @@ async function fetchSubreddit(
 }
 
 async function collectFromSubreddit(subreddit: string): Promise<RedditPost[]> {
-  // Fetch top by score (proven engagement)
-  const topByScore = await fetchSubreddit(subreddit, 'score', 25);
-
-  await sleep(RATE_LIMIT_DELAY);
-
-  // Fetch newest (fresh ideas)
-  const newest = await fetchSubreddit(subreddit, 'created_utc', 25);
-
-  // Deduplicate by ID
-  const map = new Map<string, RedditPost>();
-  for (const p of [...topByScore, ...newest]) map.set(p.id, p);
-  return Array.from(map.values());
+  return fetchSubreddit(subreddit, 100);
 }
 
 // --- Filtering ---
