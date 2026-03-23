@@ -2,10 +2,11 @@ import axios from 'axios';
 import type { CollectedIdea, CollectorResult } from './types';
 import { scoreDemandSignals, enrichWithSignals, SOURCE_THRESHOLDS } from './signals';
 
-const REDDIT_BASE = 'https://www.reddit.com';
-const USER_AGENT = 'IdeaRadar/2.0 (Product idea discovery tool)';
+const REDDIT_OAUTH_BASE = 'https://oauth.reddit.com';
+const REDDIT_AUTH_URL = 'https://www.reddit.com/api/v1/access_token';
+const USER_AGENT = 'IdeaRadar/2.4 (Product idea discovery; contact admin)';
 const RATE_LIMIT_DELAY = 1500; // 1.5s between requests (conservative)
-const REQUEST_TIMEOUT = 10000;
+const REQUEST_TIMEOUT = 15000;
 
 const DEFAULT_SUBREDDITS = [
   'SaaS',
@@ -45,6 +46,55 @@ interface RedditListing {
   };
 }
 
+interface RedditTokenResponse {
+  access_token: string;
+  token_type: string;
+  expires_in: number;
+  scope: string;
+}
+
+// --- OAuth2 Token Manager ---
+
+let cachedToken: string | null = null;
+let tokenExpiresAt = 0;
+
+async function getAccessToken(): Promise<string> {
+  const clientId = process.env.REDDIT_CLIENT_ID;
+  const clientSecret = process.env.REDDIT_CLIENT_SECRET;
+
+  if (!clientId || !clientSecret) {
+    throw new Error(
+      'Reddit OAuth2 credentials not configured. Set REDDIT_CLIENT_ID and REDDIT_CLIENT_SECRET.'
+    );
+  }
+
+  // Return cached token if still valid (with 60s buffer)
+  if (cachedToken && Date.now() < tokenExpiresAt - 60_000) {
+    return cachedToken;
+  }
+
+  const response = await axios.post<RedditTokenResponse>(
+    REDDIT_AUTH_URL,
+    'grant_type=client_credentials',
+    {
+      auth: {
+        username: clientId,
+        password: clientSecret,
+      },
+      headers: {
+        'User-Agent': USER_AGENT,
+        'Content-Type': 'application/x-www-form-urlencoded',
+      },
+      timeout: REQUEST_TIMEOUT,
+    }
+  );
+
+  cachedToken = response.data.access_token;
+  tokenExpiresAt = Date.now() + response.data.expires_in * 1000;
+
+  return cachedToken;
+}
+
 // --- Helpers ---
 
 function sleep(ms: number): Promise<void> {
@@ -58,17 +108,19 @@ async function fetchSubreddit(
   sort: 'hot' | 'new' | 'top',
   time?: 'day' | 'week' | 'month'
 ): Promise<RedditPost[]> {
-  const params = new URLSearchParams({
-    limit: '25',
-    raw_json: '1', // Avoid HTML encoding in selftext
-  });
+  const token = await getAccessToken();
+
+  const params = new URLSearchParams({ limit: '25', raw_json: '1' });
   if (time) params.set('t', time);
 
-  const url = `${REDDIT_BASE}/r/${subreddit}/${sort}.json?${params}`;
+  const url = `${REDDIT_OAUTH_BASE}/r/${subreddit}/${sort}?${params}`;
 
   try {
     const response = await axios.get<RedditListing>(url, {
-      headers: { 'User-Agent': USER_AGENT },
+      headers: {
+        'User-Agent': USER_AGENT,
+        Authorization: `Bearer ${token}`,
+      },
       timeout: REQUEST_TIMEOUT,
     });
 
@@ -81,11 +133,17 @@ async function fetchSubreddit(
       .map((child) => child.data);
   } catch (error) {
     if (axios.isAxiosError(error)) {
+      if (error.response?.status === 401) {
+        // Token expired or invalid — clear cache and let caller retry
+        cachedToken = null;
+        tokenExpiresAt = 0;
+        throw new Error(`Reddit auth failed for r/${subreddit} — token expired`);
+      }
       if (error.response?.status === 429) {
         throw new Error(`Reddit rate limit exceeded for r/${subreddit}`);
       }
       if (error.response?.status === 403) {
-        throw new Error(`Reddit access denied for r/${subreddit} (may need different User-Agent)`);
+        throw new Error(`Reddit access denied for r/${subreddit}`);
       }
     }
     throw error;
@@ -116,27 +174,18 @@ async function collectFromSubreddit(subreddit: string): Promise<RedditPost[]> {
 const EXCLUDED_FLAIRS = ['META', 'MOD POST', 'MODERATOR', 'RULES'];
 
 function shouldIncludePost(post: RedditPost): boolean {
-  // Skip stickied posts (usually mod announcements)
   if (post.stickied) return false;
-
-  // Skip NSFW
   if (post.over_18) return false;
-
-  // Minimum engagement
   if (post.score < 5) return false;
   if (post.num_comments < 2) return false;
-
-  // Upvote ratio check (avoid controversial/spam)
   if (post.upvote_ratio < 0.6) return false;
 
-  // Skip image/video-only posts (no text content to analyze)
   if (!post.is_self && !post.selftext) {
     const imageExtensions = ['.jpg', '.jpeg', '.png', '.gif', '.webp', '.mp4', '.gifv'];
     if (imageExtensions.some((ext) => post.url.toLowerCase().includes(ext))) return false;
     if (post.url.includes('i.redd.it') || post.url.includes('v.redd.it')) return false;
   }
 
-  // Exclude certain flairs
   if (post.link_flair_text) {
     const flair = post.link_flair_text.toUpperCase();
     if (EXCLUDED_FLAIRS.some((f) => flair.includes(f))) return false;
@@ -152,7 +201,7 @@ function convertRedditPost(post: RedditPost): CollectedIdea {
     ? post.selftext.slice(0, 500).trim()
     : post.title;
 
-  const redditUrl = `${REDDIT_BASE}${post.permalink}`;
+  const redditUrl = `https://www.reddit.com${post.permalink}`;
 
   return {
     title: post.title,
@@ -180,6 +229,18 @@ export async function collectReddit(subreddits?: string[]): Promise<CollectorRes
   const items: CollectedIdea[] = [];
   const errors: string[] = [];
   const targetSubreddits = subreddits || DEFAULT_SUBREDDITS;
+
+  // Check credentials before starting
+  if (!process.env.REDDIT_CLIENT_ID || !process.env.REDDIT_CLIENT_SECRET) {
+    console.warn('[Reddit] Skipping: REDDIT_CLIENT_ID / REDDIT_CLIENT_SECRET not set.');
+    console.warn('[Reddit] To enable: create a Reddit app at https://www.reddit.com/prefs/apps');
+    return {
+      source: 'reddit',
+      items: [],
+      errors: ['Reddit OAuth2 credentials not configured (set REDDIT_CLIENT_ID + REDDIT_CLIENT_SECRET)'],
+      duration: Date.now() - startTime,
+    };
+  }
 
   for (const subreddit of targetSubreddits) {
     try {
@@ -212,7 +273,6 @@ export async function collectReddit(subreddits?: string[]): Promise<CollectorRes
       errors.push(`r/${subreddit}: ${msg}`);
       console.error(`[Reddit] Error in r/${subreddit}:`, msg);
 
-      // Still wait before next subreddit even on error
       await sleep(RATE_LIMIT_DELAY);
     }
   }
