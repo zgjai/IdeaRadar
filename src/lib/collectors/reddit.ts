@@ -35,14 +35,14 @@ interface RssEntry {
 function curlGet(url: string): Promise<string> {
   return new Promise((resolve, reject) => {
     execFile('curl', [
-      '-s', '-L',
+      '-sS', '-L', '-4',
       '--max-time', String(REQUEST_TIMEOUT),
       '-A', 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
       '-H', 'Accept: text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
       '-H', 'Accept-Language: en-US,en;q=0.5',
       url,
     ], { maxBuffer: 4 * 1024 * 1024, timeout: (REQUEST_TIMEOUT + 3) * 1000 }, (err, stdout, stderr) => {
-      if (err) return reject(new Error(err.message));
+      if (err) return reject(new Error(stderr || err.message));
       if (!stdout || stdout.length < 50) return reject(new Error(`Empty response from ${url}`));
       resolve(stdout);
     });
