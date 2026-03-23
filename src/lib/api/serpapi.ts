@@ -224,10 +224,35 @@ export class SerpAPIClient {
 }
 
 let _client: SerpAPIClient | null = null;
+let _clientKey: string = '';
 
 export function getSerpAPIClient(): SerpAPIClient {
   if (!_client) {
     _client = new SerpAPIClient();
+  }
+  return _client;
+}
+
+/**
+ * Get SerpAPI client, checking the database for a stored API key first.
+ * Settings page saves the key to DB under 'seo.serpapi.apiKey'.
+ */
+export async function getSerpAPIClientWithDB(): Promise<SerpAPIClient> {
+  try {
+    const setting = await db.query.settings.findFirst({
+      where: (s, { eq }) => eq(s.key, 'seo.serpapi.apiKey'),
+    });
+    const dbKey = setting?.value || '';
+
+    // If DB key changed or client not yet created, rebuild
+    if (dbKey && dbKey !== _clientKey) {
+      _clientKey = dbKey;
+      _client = new SerpAPIClient({ apiKey: dbKey });
+    } else if (!_client) {
+      _client = new SerpAPIClient();
+    }
+  } catch {
+    if (!_client) _client = new SerpAPIClient();
   }
   return _client;
 }

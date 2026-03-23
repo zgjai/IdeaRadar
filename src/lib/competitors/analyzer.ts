@@ -7,7 +7,7 @@ import {
 } from '../db/schema';
 import { eq, desc, inArray, sql } from 'drizzle-orm';
 import { getDataForSEOClient } from '../api/dataforseo';
-import { getSerpAPIClient } from '../api/serpapi';
+import { getSerpAPIClientWithDB } from '../api/serpapi';
 import { cacheGet, CacheKeys } from '../cache';
 import { withBudgetCheck } from '../budget/manager';
 import type { Idea, Competitor } from '../db/schema';
@@ -145,7 +145,7 @@ async function fetchSerpForKeyword(keyword: string) {
   }
 
   // Fallback to SerpAPI
-  const serpAPI = getSerpAPIClient();
+  const serpAPI = await getSerpAPIClientWithDB();
   if (serpAPI.configured) {
     return cacheGet(CacheKeys.serpResults(keyword), async () => {
       const result = await withBudgetCheck('serpapi', 0.01, () => serpAPI.search(keyword));

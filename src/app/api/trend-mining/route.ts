@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/db';
 import { trendDiscoveries, keywords } from '@/lib/db/schema';
-import { getSerpAPIClient } from '@/lib/api/serpapi';
+import { getSerpAPIClientWithDB } from '@/lib/api/serpapi';
 import { getDataForSEOClient } from '@/lib/api/dataforseo';
 import { generateId } from '@/lib/utils';
 import { desc, eq, like, sql } from 'drizzle-orm';
@@ -82,7 +82,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Maximum 10 seed words allowed' }, { status: 400 });
     }
 
-    const serpClient = getSerpAPIClient();
+    const serpClient = await getSerpAPIClientWithDB();
     if (!serpClient.configured) {
       return NextResponse.json({ error: 'SerpAPI key not configured' }, { status: 400 });
     }

@@ -1,4 +1,4 @@
-import { getSerpAPIClient } from '../api/serpapi';
+import { getSerpAPIClientWithDB } from '../api/serpapi';
 import type { CollectedIdea, CollectorResult } from './types';
 
 // Tech/startup related keywords for filtering trending searches
@@ -34,7 +34,7 @@ export async function collectGoogleTrends(): Promise<CollectorResult> {
   const errors: string[] = [];
 
   try {
-    const client = getSerpAPIClient();
+    const client = await getSerpAPIClientWithDB();
     if (!client.configured) {
       return {
         source: 'google_trends',
