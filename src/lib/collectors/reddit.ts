@@ -1,11 +1,17 @@
-import axios from 'axios';
 import type { CollectedIdea, CollectorResult } from './types';
 import { scoreDemandSignals, enrichWithSignals, SOURCE_THRESHOLDS } from './signals';
 
 const REDDIT_BASE = 'https://www.reddit.com';
-const USER_AGENT = 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36';
 const RATE_LIMIT_DELAY = 2000;
 const REQUEST_TIMEOUT = 15000;
+
+// Full browser headers required — minimal headers return 403
+// Uses native fetch (Node 18+) which handles IPv4/IPv6 correctly
+const BROWSER_HEADERS: Record<string, string> = {
+  'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+  'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
+  'Accept-Language': 'en-US,en;q=0.5',
+};
 
 const DEFAULT_SUBREDDITS = [
   'SaaS',
@@ -18,7 +24,7 @@ const DEFAULT_SUBREDDITS = [
 // --- Atom RSS types ---
 
 interface RssEntry {
-  id: string;         // e.g. "t3_abc123"
+  id: string;
   title: string;
   url: string;
   author: string;
@@ -34,7 +40,6 @@ function sleep(ms: number): Promise<void> {
   return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
-/** Decode HTML entities in a string */
 function decodeHtmlEntities(str: string): string {
   return str
     .replace(/&amp;/g, '&')
@@ -47,61 +52,38 @@ function decodeHtmlEntities(str: string): string {
     .replace(/&nbsp;/g, ' ');
 }
 
-/** Strip HTML tags and collapse whitespace */
 function stripHtml(html: string): string {
-  return html
-    .replace(/<[^>]+>/g, ' ')
-    .replace(/\s+/g, ' ')
-    .trim();
+  return html.replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim();
 }
 
-/** Extract text content from HTML-encoded Atom <content> field */
 function extractTextFromContent(encoded: string): string {
-  const decoded = decodeHtmlEntities(encoded);
-  return stripHtml(decoded).slice(0, 500);
+  return stripHtml(decodeHtmlEntities(encoded)).slice(0, 500);
 }
 
-/** Parse Reddit Atom RSS XML into entry objects */
 function parseAtomFeed(xml: string, subreddit: string): RssEntry[] {
   const entries: RssEntry[] = [];
-
-  // Match each <entry>...</entry> block
   const entryRegex = /<entry>([\s\S]*?)<\/entry>/g;
-  let entryMatch: RegExpExecArray | null;
+  let m: RegExpExecArray | null;
 
-  while ((entryMatch = entryRegex.exec(xml)) !== null) {
-    const block = entryMatch[1];
+  while ((m = entryRegex.exec(xml)) !== null) {
+    const block = m[1];
 
-    // id: <id>t3_abc123</id>
-    const idMatch = block.match(/<id>([^<]+)<\/id>/);
-    const rawId = idMatch?.[1]?.trim() ?? '';
+    const rawId = block.match(/<id>([^<]+)<\/id>/)?.[1]?.trim() ?? '';
     const id = rawId.replace(/^t3_/, '');
     if (!id) continue;
 
-    // title: <title>Post title here</title>
-    const titleMatch = block.match(/<title>([^<]*)<\/title>/);
-    const title = decodeHtmlEntities(titleMatch?.[1]?.trim() ?? '');
+    const title = decodeHtmlEntities(
+      block.match(/<title>([^<]*)<\/title>/)?.[1]?.trim() ?? ''
+    );
     if (!title) continue;
 
-    // link: <link href="https://..." />
-    const linkMatch = block.match(/<link[^>]+href="([^"]+)"/);
-    const url = linkMatch?.[1]?.trim() ?? '';
+    const url = block.match(/<link[^>]+href="([^"]+)"/)?.[1]?.trim() ?? '';
     if (!url) continue;
 
-    // author: <name>/u/username</name>
-    const authorMatch = block.match(/<name>([^<]+)<\/name>/);
-    const author = authorMatch?.[1]?.trim() ?? '';
-
-    // published: <published>2026-03-23T08:24:59+00:00</published>
-    const pubMatch = block.match(/<published>([^<]+)<\/published>/);
-    const publishedAt = pubMatch?.[1]?.trim() ?? new Date().toISOString();
-
-    // content: <content type="html">...</content>
-    const contentMatch = block.match(/<content[^>]*>([\s\S]*?)<\/content>/);
-    const rawContent = contentMatch?.[1] ?? '';
+    const author = block.match(/<name>([^<]+)<\/name>/)?.[1]?.trim() ?? '';
+    const publishedAt = block.match(/<published>([^<]+)<\/published>/)?.[1]?.trim() ?? new Date().toISOString();
+    const rawContent = block.match(/<content[^>]*>([\s\S]*?)<\/content>/)?.[1] ?? '';
     const description = extractTextFromContent(rawContent);
-
-    // Detect if external link (non-reddit URL in content)
     const isExternal = !url.includes('/comments/');
 
     entries.push({ id, title, url, author, subreddit, description, publishedAt, isExternal });
@@ -110,7 +92,7 @@ function parseAtomFeed(xml: string, subreddit: string): RssEntry[] {
   return entries;
 }
 
-// --- Fetch ---
+// --- Fetch using native fetch (undici, works where axios hangs) ---
 
 async function fetchSubredditRss(
   subreddit: string,
@@ -122,17 +104,17 @@ async function fetchSubredditRss(
 
   const url = `${REDDIT_BASE}/r/${subreddit}/${sort}/.rss?${params}`;
 
-  const response = await axios.get<string>(url, {
-    headers: { 'User-Agent': USER_AGENT },
-    timeout: REQUEST_TIMEOUT,
-    responseType: 'text',
+  const response = await fetch(url, {
+    headers: BROWSER_HEADERS,
+    signal: AbortSignal.timeout(REQUEST_TIMEOUT),
   });
 
-  if (response.status !== 200) {
+  if (!response.ok) {
     throw new Error(`HTTP ${response.status} for r/${subreddit}`);
   }
 
-  return parseAtomFeed(response.data, subreddit);
+  const xml = await response.text();
+  return parseAtomFeed(xml, subreddit);
 }
 
 async function collectFromSubreddit(subreddit: string): Promise<RssEntry[]> {
@@ -140,7 +122,6 @@ async function collectFromSubreddit(subreddit: string): Promise<RssEntry[]> {
   await sleep(RATE_LIMIT_DELAY);
   const top = await fetchSubredditRss(subreddit, 'top', 'week');
 
-  // Deduplicate by ID
   const map = new Map<string, RssEntry>();
   for (const e of [...hot, ...top]) map.set(e.id, e);
   return Array.from(map.values());
@@ -149,12 +130,8 @@ async function collectFromSubreddit(subreddit: string): Promise<RssEntry[]> {
 // --- Filtering ---
 
 function shouldIncludeEntry(entry: RssEntry): boolean {
-  // Skip very short titles (likely mod posts)
   if (entry.title.length < 15) return false;
-
-  // Skip AutoModerator posts
   if (entry.author === '/u/AutoModerator') return false;
-
   return true;
 }
 
@@ -167,8 +144,8 @@ function convertEntry(entry: RssEntry): CollectedIdea {
     url: entry.url,
     source: 'reddit',
     sourceId: entry.id,
-    sourceScore: 0,      // Not available in RSS
-    sourceComments: 0,   // Not available in RSS
+    sourceScore: 0,
+    sourceComments: 0,
     discoveredAt: entry.publishedAt,
     metadata: {
       subreddit: entry.subreddit,
@@ -199,7 +176,6 @@ export async function collectReddit(subreddits?: string[]): Promise<CollectorRes
         const idea = convertEntry(entry);
         const signals = scoreDemandSignals(idea.title, idea.description);
 
-        // RSS has no score data — rely on demand signal scoring only
         if (signals.score >= (SOURCE_THRESHOLDS.reddit ?? 15)) {
           items.push(enrichWithSignals(idea));
           kept++;
