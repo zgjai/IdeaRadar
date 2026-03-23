@@ -61,11 +61,6 @@ DATAFORSEO_LOGIN=your_dataforseo_login
 DATAFORSEO_PASSWORD=your_dataforseo_password
 SERPAPI_KEY=your_serpapi_key
 
-# Optional: Reddit OAuth2 (required for Reddit collection — anonymous API blocked from servers)
-# Create an app at https://www.reddit.com/prefs/apps (type: script)
-REDDIT_CLIENT_ID=your_reddit_client_id
-REDDIT_CLIENT_SECRET=your_reddit_client_secret
-
 # Optional: Product Hunt API
 PRODUCTHUNT_TOKEN=your_producthunt_token
 
