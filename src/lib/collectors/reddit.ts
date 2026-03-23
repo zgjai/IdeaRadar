@@ -1,20 +1,10 @@
-import https from 'node:https';
+import { execFile } from 'node:child_process';
 import type { CollectedIdea, CollectorResult } from './types';
 import { scoreDemandSignals, enrichWithSignals, SOURCE_THRESHOLDS } from './signals';
 
 const REDDIT_BASE = 'https://www.reddit.com';
 const RATE_LIMIT_DELAY = 2000;
-const REQUEST_TIMEOUT = 12000;
-const MAX_REDIRECTS = 3;
-
-// Next.js patches globalThis.fetch which breaks external requests.
-// Use node:https directly with IPv4 + browser headers to bypass this.
-const BROWSER_HEADERS = {
-  'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
-  'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
-  'Accept-Language': 'en-US,en;q=0.5',
-  'Accept-Encoding': 'identity',
-};
+const REQUEST_TIMEOUT = 12; // curl --max-time in seconds
 
 const DEFAULT_SUBREDDITS = [
   'SaaS',
@@ -37,44 +27,32 @@ interface RssEntry {
   isExternal: boolean;
 }
 
-// --- HTTP helper ---
+// --- HTTP via curl ---
+// Next.js Turbopack rewrites/patches both fetch and node:https, breaking
+// external requests to Reddit. Spawn curl as a subprocess to guarantee
+// the same network path that works from the command line.
+
+function curlGet(url: string): Promise<string> {
+  return new Promise((resolve, reject) => {
+    execFile('curl', [
+      '-s', '-L',
+      '--max-time', String(REQUEST_TIMEOUT),
+      '-A', 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+      '-H', 'Accept: text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
+      '-H', 'Accept-Language: en-US,en;q=0.5',
+      url,
+    ], { maxBuffer: 4 * 1024 * 1024, timeout: (REQUEST_TIMEOUT + 3) * 1000 }, (err, stdout, stderr) => {
+      if (err) return reject(new Error(err.message));
+      if (!stdout || stdout.length < 50) return reject(new Error(`Empty response from ${url}`));
+      resolve(stdout);
+    });
+  });
+}
+
+// --- Helpers ---
 
 function sleep(ms: number): Promise<void> {
   return new Promise((resolve) => setTimeout(resolve, ms));
-}
-
-function httpsGet(url: string, redirectsLeft = MAX_REDIRECTS): Promise<string> {
-  return new Promise((resolve, reject) => {
-    const req = https.get(url, {
-      family: 4, // Force IPv4 — Reddit times out on IPv6 from datacenter IPs
-      headers: BROWSER_HEADERS,
-      timeout: REQUEST_TIMEOUT,
-    } as Parameters<typeof https.get>[1], (res) => {
-      // Follow redirects
-      if (res.statusCode && res.statusCode >= 300 && res.statusCode < 400 && res.headers.location) {
-        if (redirectsLeft <= 0) return reject(new Error('Too many redirects'));
-        res.resume();
-        return httpsGet(res.headers.location, redirectsLeft - 1).then(resolve).catch(reject);
-      }
-
-      if (res.statusCode && res.statusCode !== 200) {
-        res.resume();
-        return reject(new Error(`HTTP ${res.statusCode}`));
-      }
-
-      let data = '';
-      res.setEncoding('utf8');
-      res.on('data', (chunk: string) => { data += chunk; });
-      res.on('end', () => resolve(data));
-      res.on('error', reject);
-    });
-
-    req.on('error', reject);
-    req.on('timeout', () => {
-      req.destroy();
-      reject(new Error(`Request timeout after ${REQUEST_TIMEOUT}ms`));
-    });
-  });
 }
 
 // --- Atom XML parser ---
@@ -142,7 +120,7 @@ async function fetchSubredditRss(
   if (sort === 'top' && time) params.set('t', time);
 
   const url = `${REDDIT_BASE}/r/${subreddit}/${sort}/.rss?${params}`;
-  const xml = await httpsGet(url);
+  const xml = await curlGet(url);
   return parseAtomFeed(xml, subreddit);
 }
 
