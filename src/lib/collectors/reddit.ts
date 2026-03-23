@@ -1,16 +1,19 @@
+import https from 'node:https';
 import type { CollectedIdea, CollectorResult } from './types';
 import { scoreDemandSignals, enrichWithSignals, SOURCE_THRESHOLDS } from './signals';
 
 const REDDIT_BASE = 'https://www.reddit.com';
 const RATE_LIMIT_DELAY = 2000;
-const REQUEST_TIMEOUT = 15000;
+const REQUEST_TIMEOUT = 12000;
+const MAX_REDIRECTS = 3;
 
-// Full browser headers required — minimal headers return 403
-// Uses native fetch (Node 18+) which handles IPv4/IPv6 correctly
-const BROWSER_HEADERS: Record<string, string> = {
+// Next.js patches globalThis.fetch which breaks external requests.
+// Use node:https directly with IPv4 + browser headers to bypass this.
+const BROWSER_HEADERS = {
   'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
   'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
   'Accept-Language': 'en-US,en;q=0.5',
+  'Accept-Encoding': 'identity',
 };
 
 const DEFAULT_SUBREDDITS = [
@@ -34,11 +37,47 @@ interface RssEntry {
   isExternal: boolean;
 }
 
-// --- Helpers ---
+// --- HTTP helper ---
 
 function sleep(ms: number): Promise<void> {
   return new Promise((resolve) => setTimeout(resolve, ms));
 }
+
+function httpsGet(url: string, redirectsLeft = MAX_REDIRECTS): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const req = https.get(url, {
+      family: 4, // Force IPv4 — Reddit times out on IPv6 from datacenter IPs
+      headers: BROWSER_HEADERS,
+      timeout: REQUEST_TIMEOUT,
+    } as Parameters<typeof https.get>[1], (res) => {
+      // Follow redirects
+      if (res.statusCode && res.statusCode >= 300 && res.statusCode < 400 && res.headers.location) {
+        if (redirectsLeft <= 0) return reject(new Error('Too many redirects'));
+        res.resume();
+        return httpsGet(res.headers.location, redirectsLeft - 1).then(resolve).catch(reject);
+      }
+
+      if (res.statusCode && res.statusCode !== 200) {
+        res.resume();
+        return reject(new Error(`HTTP ${res.statusCode}`));
+      }
+
+      let data = '';
+      res.setEncoding('utf8');
+      res.on('data', (chunk: string) => { data += chunk; });
+      res.on('end', () => resolve(data));
+      res.on('error', reject);
+    });
+
+    req.on('error', reject);
+    req.on('timeout', () => {
+      req.destroy();
+      reject(new Error(`Request timeout after ${REQUEST_TIMEOUT}ms`));
+    });
+  });
+}
+
+// --- Atom XML parser ---
 
 function decodeHtmlEntities(str: string): string {
   return str
@@ -92,7 +131,7 @@ function parseAtomFeed(xml: string, subreddit: string): RssEntry[] {
   return entries;
 }
 
-// --- Fetch using native fetch (undici, works where axios hangs) ---
+// --- Fetch ---
 
 async function fetchSubredditRss(
   subreddit: string,
@@ -103,17 +142,7 @@ async function fetchSubredditRss(
   if (sort === 'top' && time) params.set('t', time);
 
   const url = `${REDDIT_BASE}/r/${subreddit}/${sort}/.rss?${params}`;
-
-  const response = await fetch(url, {
-    headers: BROWSER_HEADERS,
-    signal: AbortSignal.timeout(REQUEST_TIMEOUT),
-  });
-
-  if (!response.ok) {
-    throw new Error(`HTTP ${response.status} for r/${subreddit}`);
-  }
-
-  const xml = await response.text();
+  const xml = await httpsGet(url);
   return parseAtomFeed(xml, subreddit);
 }
 
