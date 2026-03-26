@@ -274,15 +274,29 @@ ${pagesContent}
  */
 function parseAIResponse(content: string): SiteAnalysis {
   let cleaned = content.trim();
+
   // Strip markdown code fences
   if (cleaned.startsWith('```')) {
     cleaned = cleaned.replace(/^```(?:json)?\s*\n?/, '').replace(/\n?```\s*$/, '');
   }
+
+  // Try direct parse first
   try {
     return JSON.parse(cleaned);
-  } catch (e) {
-    console.error(`[SiteResearch] JSON parse failed. Response length: ${content.length}, last 100 chars: "${content.slice(-100)}"`);
-    throw new Error(`AI 返回的 JSON 解析失败（响应长度: ${content.length}字符，可能被截断）`);
+  } catch {
+    // Fallback: extract JSON object from mixed text+JSON response
+    const firstBrace = cleaned.indexOf('{');
+    const lastBrace = cleaned.lastIndexOf('}');
+    if (firstBrace !== -1 && lastBrace > firstBrace) {
+      try {
+        return JSON.parse(cleaned.slice(firstBrace, lastBrace + 1));
+      } catch {
+        // fall through to error
+      }
+    }
+
+    console.error(`[SiteResearch] JSON parse failed. Response length: ${content.length}, first 200 chars: "${content.slice(0, 200)}", last 100 chars: "${content.slice(-100)}"`);
+    throw new Error(`AI 返回的内容不是有效 JSON（响应长度: ${content.length}字符）。请在设置中尝试更换分析模型。`);
   }
 }
 
@@ -295,11 +309,13 @@ export async function analyzeSite(crawl: CrawlResult): Promise<SiteAnalysis> {
 
   const response = await provider.callWithRetry(
     [
-      { role: 'system', content: '你是一位专业的产品分析师，擅长竞品分析和市场调研。请用中文回答，输出严格的 JSON 格式。' },
+      { role: 'system', content: '你是一位专业的产品分析师，擅长竞品分析和市场调研。请用中文回答，直接输出 JSON 对象，不要包含任何其他文字说明。' },
       { role: 'user', content: prompt },
     ],
     undefined,
-    'site-research'
+    'site-research',
+    3,
+    true // jsonMode: force JSON output via response_format
   );
 
   return parseAIResponse(response);

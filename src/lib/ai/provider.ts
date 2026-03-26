@@ -52,17 +52,23 @@ export class AIProvider {
   async callLLM(
     messages: ChatMessage[],
     ideaId?: string,
-    analysisType?: string
+    analysisType?: string,
+    jsonMode?: boolean
   ): Promise<{ content: string; usage: TokenUsage }> {
     const baseUrl = this.config.baseUrl || 'https://ai-gateway.happycapy.ai/api/v1';
     const endpoint = `${baseUrl.replace(/\/+$/, '')}/chat/completions`;
 
-    const requestBody = {
+    const requestBody: Record<string, unknown> = {
       model: this.config.model,
       messages,
       temperature: this.config.temperature ?? 0.3,
       max_tokens: this.config.maxTokens ?? 4096,
     };
+
+    // Force JSON output when requested
+    if (jsonMode) {
+      requestBody.response_format = { type: 'json_object' };
+    }
 
     // Opus and large analysis tasks need longer timeouts
     const timeout = this.config.model.includes('opus') ? 180000 : 120000;
@@ -127,13 +133,14 @@ export class AIProvider {
     messages: ChatMessage[],
     ideaId?: string,
     analysisType?: string,
-    maxRetries = 3
+    maxRetries = 3,
+    jsonMode?: boolean
   ): Promise<string> {
     let lastError: Error | null = null;
 
     for (let attempt = 0; attempt < maxRetries; attempt++) {
       try {
-        const result = await this.callLLM(messages, ideaId, analysisType);
+        const result = await this.callLLM(messages, ideaId, analysisType, jsonMode);
         return result.content;
       } catch (error) {
         lastError = error as Error;
