@@ -64,7 +64,10 @@ export class AIProvider {
       max_tokens: this.config.maxTokens ?? 4096,
     };
 
-    console.log(`[AI] Requesting: ${endpoint} | model=${this.config.model} | apiKey=${this.config.apiKey ? '***' + this.config.apiKey.slice(-6) : 'MISSING'}`);
+    // Opus and large analysis tasks need longer timeouts
+    const timeout = this.config.model.includes('opus') ? 180000 : 120000;
+
+    console.log(`[AI] Requesting: ${endpoint} | model=${this.config.model} | max_tokens=${requestBody.max_tokens} | timeout=${timeout/1000}s | apiKey=${this.config.apiKey ? '***' + this.config.apiKey.slice(-6) : 'MISSING'}`);
 
     try {
       const response = await axios.post<OpenAICompatibleResponse>(endpoint, requestBody, {
@@ -72,7 +75,7 @@ export class AIProvider {
           'Content-Type': 'application/json',
           Authorization: `Bearer ${this.config.apiKey}`,
         },
-        timeout: 60000,
+        timeout,
       });
 
       const content = response.data.choices[0]?.message?.content || '';
@@ -180,7 +183,7 @@ async function getAIConfig(type: 'screening' | 'analysis'): Promise<AIProviderCo
         apiKey: envApiKey,
         baseUrl: envBaseUrl,
         temperature: 0.3,
-        maxTokens: 4096,
+        maxTokens: 16384,
       };
 
   try {

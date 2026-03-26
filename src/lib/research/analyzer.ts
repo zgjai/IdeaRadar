@@ -278,7 +278,12 @@ function parseAIResponse(content: string): SiteAnalysis {
   if (cleaned.startsWith('```')) {
     cleaned = cleaned.replace(/^```(?:json)?\s*\n?/, '').replace(/\n?```\s*$/, '');
   }
-  return JSON.parse(cleaned);
+  try {
+    return JSON.parse(cleaned);
+  } catch (e) {
+    console.error(`[SiteResearch] JSON parse failed. Response length: ${content.length}, last 100 chars: "${content.slice(-100)}"`);
+    throw new Error(`AI 返回的 JSON 解析失败（响应长度: ${content.length}字符，可能被截断）`);
+  }
 }
 
 /**
