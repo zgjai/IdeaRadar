@@ -51,6 +51,11 @@ interface ExtractionCandidate {
 const COMMON_SUBPAGES = [
   '/about', '/pricing', '/features', '/product',
   '/about-us', '/plans', '/solutions', '/blog',
+  '/docs', '/documentation', '/help', '/support', '/faq',
+  '/integrations', '/changelog', '/whats-new',
+  '/api', '/developers',
+  '/customers', '/case-studies', '/testimonials',
+  '/security', '/enterprise',
 ];
 
 const SKIP_DOMAINS = new Set([
@@ -485,7 +490,7 @@ export async function crawlSite(url: string): Promise<CrawlResult> {
 
   // 4. Discover and fetch sub-pages (max 4 additional)
   const discoveredLinks = discoverSubpageLinks(mainHtml);
-  const subPaths = [...new Set([...discoveredLinks, ...COMMON_SUBPAGES])].slice(0, 6);
+  const subPaths = [...new Set([...discoveredLinks, ...COMMON_SUBPAGES])].slice(0, 10);
 
   const subResults = await Promise.allSettled(
     subPaths.map(async (path) => {
@@ -507,7 +512,7 @@ export async function crawlSite(url: string): Promise<CrawlResult> {
   for (const result of subResults) {
     if (result.status === 'fulfilled' && result.value) {
       pages.push(result.value);
-      if (pages.length >= 5) break;
+      if (pages.length >= 8) break;
     }
   }
 

@@ -89,6 +89,40 @@ export interface SiteAnalysis {
     confidence_level: number;
     evidence_gaps: string[];
   };
+  // Feature Matrix (detailed feature inventory with tiers and quality ratings)
+  featureMatrix?: {
+    core: Array<{ name: string; description: string; tier: string; quality: string }>;
+    unique: string[];
+    integrations: string[];
+    apiAvailability: string;
+    featureGaps: string[];
+  };
+  // User Scenario Analysis (personas + Jobs-to-be-Done)
+  userScenarios?: {
+    personas: Array<{
+      name: string;
+      role: string;
+      goals: string[];
+      painPoints: string[];
+      journey: string;
+      delightMoments: string[];
+    }>;
+    jobsToBeDone: string[];
+  };
+  // Build Recommendations (actionable advice for entrepreneurs)
+  buildRecommendations?: {
+    lessonsToLearn: string[];
+    gapsToExploit: string[];
+    differentiationStrategy: string;
+    mvpFeatures: string[];
+    techRecommendations: string[];
+    goToMarket: string[];
+  };
+  // Confidence Assessment (per-section reliability)
+  confidenceAssessment?: {
+    highConfidence: string[];
+    needsVerification: string[];
+  };
   overallRating: number; // 1-10
   summary: string;
 }
@@ -179,6 +213,29 @@ ${pagesContent}
     - "skip"：明确硬伤，反证强于正面论据
     给出状态、理由、置信度(0-100)、证据缺口列表。
 
+12. **功能矩阵（Feature Matrix）** - 详细的功能清单：
+    a) 核心功能列表：每个功能包含名称、简短描述、所属层级（Free/Pro/Enterprise）、质量评级（A/B/C/D）
+    b) 差异化功能：竞争对手没有的独特功能
+    c) 集成生态：支持哪些第三方工具集成
+    d) API 可用性：是否提供 API、文档质量如何
+    e) 功能缺口：明显缺少的功能或限制
+
+13. **用户场景分析（User Scenario Analysis）** - 基于产品实际目标用户：
+    a) 定义 3-4 个用户画像（Persona）：每个包含名称、角色、目标、痛点、使用旅程、惊喜时刻
+    b) Jobs-to-be-Done：这个产品帮用户完成的 3-5 个核心任务
+
+14. **创业者行动建议（Build Recommendations）** - 如果你要做一个竞品，应该怎么做：
+    a) 值得学习的优点（3-5条）
+    b) 可利用的弱点/空白（3-5条）
+    c) 差异化策略：如何在市场中差异化定位
+    d) MVP 功能集：建议最小可行产品包含哪些功能
+    e) 技术建议：推荐的技术栈和架构方向
+    f) 市场进入策略（Go-to-Market）：如何获取第一批用户
+
+15. **分析置信度** - 对以上各维度分析的可靠性做自我评估：
+    a) 高置信度：哪些结论有充分网站内容支撑
+    b) 需进一步验证：哪些结论是基于推测或信息不足
+
 最后给出一个 1-10 的总体评分和一段 100 字以内的总结。
 
 请严格按以下 JSON 格式输出（不要包含 markdown 代码块标记）：
@@ -263,6 +320,40 @@ ${pagesContent}
     "reasoning": "判定理由",
     "confidence_level": 65,
     "evidence_gaps": ["证据缺口1", "证据缺口2"]
+  },
+  "featureMatrix": {
+    "core": [
+      {"name": "功能名", "description": "描述", "tier": "Free/Pro/Enterprise", "quality": "A/B/C/D"}
+    ],
+    "unique": ["独特功能1", "独特功能2"],
+    "integrations": ["集成1", "集成2"],
+    "apiAvailability": "API 可用性描述",
+    "featureGaps": ["缺失功能1", "缺失功能2"]
+  },
+  "userScenarios": {
+    "personas": [
+      {
+        "name": "用户画像名称",
+        "role": "角色描述",
+        "goals": ["目标1", "目标2"],
+        "painPoints": ["痛点1", "痛点2"],
+        "journey": "使用旅程描述",
+        "delightMoments": ["惊喜时刻1"]
+      }
+    ],
+    "jobsToBeDone": ["核心任务1", "核心任务2", "核心任务3"]
+  },
+  "buildRecommendations": {
+    "lessonsToLearn": ["值得学习1", "值得学习2"],
+    "gapsToExploit": ["可利用空白1", "可利用空白2"],
+    "differentiationStrategy": "差异化策略描述",
+    "mvpFeatures": ["MVP功能1", "MVP功能2", "MVP功能3"],
+    "techRecommendations": ["技术建议1", "技术建议2"],
+    "goToMarket": ["GTM策略1", "GTM策略2"]
+  },
+  "confidenceAssessment": {
+    "highConfidence": ["高置信度结论1", "高置信度结论2"],
+    "needsVerification": ["需验证结论1", "需验证结论2"]
   },
   "overallRating": 8,
   "summary": "总结文字"

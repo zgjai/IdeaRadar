@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { toast } from 'sonner';
-import { Globe, Search, Clock, CheckCircle, XCircle, ArrowRight, Star, Users, Zap, TrendingUp, ShieldAlert, Lightbulb, Target, AlertTriangle, FileSearch } from 'lucide-react';
+import { Globe, Search, Clock, CheckCircle, XCircle, ArrowRight, Star, Users, Zap, TrendingUp, ShieldAlert, Lightbulb, Target, AlertTriangle, FileSearch, Layers, UserCircle, Rocket, ShieldCheck, Puzzle, Code, BarChart3 } from 'lucide-react';
 import { FiveDimRadar } from '@/components/charts/five-dim-radar';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -74,6 +74,36 @@ interface SiteAnalysis {
     reasoning: string;
     confidence_level: number;
     evidence_gaps: string[];
+  };
+  featureMatrix?: {
+    core: Array<{ name: string; description: string; tier: string; quality: string }>;
+    unique: string[];
+    integrations: string[];
+    apiAvailability: string;
+    featureGaps: string[];
+  };
+  userScenarios?: {
+    personas: Array<{
+      name: string;
+      role: string;
+      goals: string[];
+      painPoints: string[];
+      journey: string;
+      delightMoments: string[];
+    }>;
+    jobsToBeDone: string[];
+  };
+  buildRecommendations?: {
+    lessonsToLearn: string[];
+    gapsToExploit: string[];
+    differentiationStrategy: string;
+    mvpFeatures: string[];
+    techRecommendations: string[];
+    goToMarket: string[];
+  };
+  confidenceAssessment?: {
+    highConfidence: string[];
+    needsVerification: string[];
   };
   overallRating: number;
   summary: string;
@@ -689,6 +719,253 @@ export default function ResearchPage() {
             </CardContent>
           </Card>
         </div>
+      )}
+
+      {/* Feature Matrix */}
+      {analysis?.featureMatrix && (
+        <Card>
+          <CardContent className="p-6">
+            <h3 className="text-lg font-bold text-slate-800 mb-4 flex items-center gap-2">
+              <Layers className="w-5 h-5 text-indigo-600" />
+              功能矩阵
+            </h3>
+
+            {analysis.featureMatrix.core.length > 0 && (
+              <div className="mb-5 overflow-x-auto">
+                <table className="w-full text-sm">
+                  <thead>
+                    <tr className="border-b border-slate-200">
+                      <th className="text-left py-2 pr-3 font-semibold text-slate-600">功能</th>
+                      <th className="text-left py-2 pr-3 font-semibold text-slate-600">描述</th>
+                      <th className="text-left py-2 pr-3 font-semibold text-slate-600">层级</th>
+                      <th className="text-left py-2 font-semibold text-slate-600">评级</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {analysis.featureMatrix.core.map((f, i) => (
+                      <tr key={i} className="border-b border-slate-50">
+                        <td className="py-2 pr-3 font-medium text-slate-800">{f.name}</td>
+                        <td className="py-2 pr-3 text-slate-600">{f.description}</td>
+                        <td className="py-2 pr-3">
+                          <Badge variant="outline" className={
+                            f.tier === 'Free' ? 'border-green-300 text-green-700' :
+                            f.tier === 'Pro' ? 'border-blue-300 text-blue-700' :
+                            'border-purple-300 text-purple-700'
+                          }>{f.tier}</Badge>
+                        </td>
+                        <td className="py-2">
+                          <span className={`inline-flex items-center justify-center w-7 h-7 rounded-full text-xs font-bold ${
+                            f.quality === 'A' ? 'bg-green-100 text-green-700' :
+                            f.quality === 'B' ? 'bg-blue-100 text-blue-700' :
+                            f.quality === 'C' ? 'bg-yellow-100 text-yellow-700' :
+                            'bg-red-100 text-red-700'
+                          }`}>{f.quality}</span>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {analysis.featureMatrix.unique.length > 0 && (
+                <div>
+                  <p className="text-sm font-semibold text-slate-700 mb-2 flex items-center gap-1"><Star className="w-4 h-4 text-indigo-500" /> 差异化功能</p>
+                  <div className="flex flex-wrap gap-1.5">
+                    {analysis.featureMatrix.unique.map((u, i) => (
+                      <Badge key={i} variant="outline" className="border-indigo-200 text-indigo-700 text-xs">{u}</Badge>
+                    ))}
+                  </div>
+                </div>
+              )}
+              {analysis.featureMatrix.integrations.length > 0 && (
+                <div>
+                  <p className="text-sm font-semibold text-slate-700 mb-2 flex items-center gap-1"><Puzzle className="w-4 h-4 text-blue-500" /> 集成生态</p>
+                  <div className="flex flex-wrap gap-1.5">
+                    {analysis.featureMatrix.integrations.map((ig, i) => (
+                      <Badge key={i} variant="outline" className="border-blue-200 text-blue-700 text-xs">{ig}</Badge>
+                    ))}
+                  </div>
+                </div>
+              )}
+              {analysis.featureMatrix.apiAvailability && (
+                <div>
+                  <p className="text-sm font-semibold text-slate-700 mb-2 flex items-center gap-1"><Code className="w-4 h-4 text-slate-500" /> API 可用性</p>
+                  <p className="text-sm text-slate-600">{analysis.featureMatrix.apiAvailability}</p>
+                </div>
+              )}
+              {analysis.featureMatrix.featureGaps.length > 0 && (
+                <div>
+                  <p className="text-sm font-semibold text-slate-700 mb-2 flex items-center gap-1"><AlertTriangle className="w-4 h-4 text-amber-500" /> 功能缺口</p>
+                  <ul className="space-y-1">
+                    {analysis.featureMatrix.featureGaps.map((g, i) => (
+                      <li key={i} className="text-sm text-slate-600 flex items-start"><span className="mr-2 text-amber-500">-</span>{g}</li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* User Scenarios */}
+      {analysis?.userScenarios && (
+        <Card>
+          <CardContent className="p-6">
+            <h3 className="text-lg font-bold text-slate-800 mb-4 flex items-center gap-2">
+              <UserCircle className="w-5 h-5 text-teal-600" />
+              用户场景分析
+            </h3>
+
+            {analysis.userScenarios.personas.length > 0 && (
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-5">
+                {analysis.userScenarios.personas.map((p, i) => (
+                  <div key={i} className="bg-gradient-to-br from-teal-50 to-cyan-50 rounded-xl p-4 border border-teal-100">
+                    <div className="flex items-center gap-2 mb-2">
+                      <span className="w-8 h-8 rounded-full bg-teal-600 text-white flex items-center justify-center text-sm font-bold">{p.name[0]}</span>
+                      <div>
+                        <p className="font-semibold text-slate-800">{p.name}</p>
+                        <p className="text-xs text-slate-500">{p.role}</p>
+                      </div>
+                    </div>
+                    <div className="space-y-2 mt-3">
+                      <div>
+                        <p className="text-xs font-semibold text-teal-700 mb-1">目标</p>
+                        <div className="flex flex-wrap gap-1">{p.goals.map((g, j) => <Badge key={j} variant="outline" className="text-xs border-teal-200 text-teal-700">{g}</Badge>)}</div>
+                      </div>
+                      <div>
+                        <p className="text-xs font-semibold text-red-600 mb-1">痛点</p>
+                        <ul className="space-y-0.5">{p.painPoints.map((pp, j) => <li key={j} className="text-xs text-slate-600">- {pp}</li>)}</ul>
+                      </div>
+                      <div>
+                        <p className="text-xs font-semibold text-slate-600 mb-1">使用旅程</p>
+                        <p className="text-xs text-slate-500">{p.journey}</p>
+                      </div>
+                      {p.delightMoments.length > 0 && (
+                        <div>
+                          <p className="text-xs font-semibold text-green-600 mb-1">惊喜时刻</p>
+                          <ul className="space-y-0.5">{p.delightMoments.map((d, j) => <li key={j} className="text-xs text-slate-600">- {d}</li>)}</ul>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+
+            {analysis.userScenarios.jobsToBeDone.length > 0 && (
+              <div className="bg-slate-50 rounded-xl p-4">
+                <p className="text-sm font-semibold text-slate-700 mb-2 flex items-center gap-1"><Target className="w-4 h-4 text-teal-600" /> Jobs-to-be-Done</p>
+                <div className="space-y-2">
+                  {analysis.userScenarios.jobsToBeDone.map((job, i) => (
+                    <div key={i} className="flex items-start">
+                      <span className="w-6 h-6 rounded-full bg-teal-100 text-teal-700 flex items-center justify-center text-xs font-bold mr-2 mt-0.5 shrink-0">{i + 1}</span>
+                      <p className="text-sm text-slate-700">{job}</p>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Build Recommendations */}
+      {analysis?.buildRecommendations && (
+        <Card>
+          <CardContent className="p-6">
+            <h3 className="text-lg font-bold text-slate-800 mb-4 flex items-center gap-2">
+              <Rocket className="w-5 h-5 text-emerald-600" />
+              创业者行动建议
+            </h3>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+              {analysis.buildRecommendations.lessonsToLearn.length > 0 && (
+                <div className="bg-blue-50 rounded-xl p-4">
+                  <p className="text-sm font-semibold text-blue-700 mb-2">值得学习</p>
+                  <ul className="space-y-1.5">{analysis.buildRecommendations.lessonsToLearn.map((l, i) => (
+                    <li key={i} className="text-sm text-slate-700 flex items-start"><CheckCircle className="w-3.5 h-3.5 text-blue-500 mr-1.5 mt-0.5 shrink-0" />{l}</li>
+                  ))}</ul>
+                </div>
+              )}
+
+              {analysis.buildRecommendations.gapsToExploit.length > 0 && (
+                <div className="bg-amber-50 rounded-xl p-4">
+                  <p className="text-sm font-semibold text-amber-700 mb-2">可利用的空白</p>
+                  <ul className="space-y-1.5">{analysis.buildRecommendations.gapsToExploit.map((g, i) => (
+                    <li key={i} className="text-sm text-slate-700 flex items-start"><Target className="w-3.5 h-3.5 text-amber-500 mr-1.5 mt-0.5 shrink-0" />{g}</li>
+                  ))}</ul>
+                </div>
+              )}
+
+              {analysis.buildRecommendations.mvpFeatures.length > 0 && (
+                <div className="bg-emerald-50 rounded-xl p-4">
+                  <p className="text-sm font-semibold text-emerald-700 mb-2">MVP 功能集</p>
+                  <ul className="space-y-1.5">{analysis.buildRecommendations.mvpFeatures.map((f, i) => (
+                    <li key={i} className="text-sm text-slate-700 flex items-start"><Zap className="w-3.5 h-3.5 text-emerald-500 mr-1.5 mt-0.5 shrink-0" />{f}</li>
+                  ))}</ul>
+                </div>
+              )}
+
+              {analysis.buildRecommendations.differentiationStrategy && (
+                <div className="bg-purple-50 rounded-xl p-4">
+                  <p className="text-sm font-semibold text-purple-700 mb-2">差异化策略</p>
+                  <p className="text-sm text-slate-700">{analysis.buildRecommendations.differentiationStrategy}</p>
+                </div>
+              )}
+
+              {analysis.buildRecommendations.techRecommendations.length > 0 && (
+                <div className="bg-slate-50 rounded-xl p-4">
+                  <p className="text-sm font-semibold text-slate-700 mb-2">技术建议</p>
+                  <ul className="space-y-1.5">{analysis.buildRecommendations.techRecommendations.map((t, i) => (
+                    <li key={i} className="text-sm text-slate-700 flex items-start"><Code className="w-3.5 h-3.5 text-slate-500 mr-1.5 mt-0.5 shrink-0" />{t}</li>
+                  ))}</ul>
+                </div>
+              )}
+
+              {analysis.buildRecommendations.goToMarket.length > 0 && (
+                <div className="bg-rose-50 rounded-xl p-4">
+                  <p className="text-sm font-semibold text-rose-700 mb-2">市场进入策略</p>
+                  <ul className="space-y-1.5">{analysis.buildRecommendations.goToMarket.map((g, i) => (
+                    <li key={i} className="text-sm text-slate-700 flex items-start"><BarChart3 className="w-3.5 h-3.5 text-rose-500 mr-1.5 mt-0.5 shrink-0" />{g}</li>
+                  ))}</ul>
+                </div>
+              )}
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Confidence Assessment */}
+      {analysis?.confidenceAssessment && (
+        <Card>
+          <CardContent className="p-6">
+            <h3 className="text-lg font-bold text-slate-800 mb-4 flex items-center gap-2">
+              <ShieldCheck className="w-5 h-5 text-slate-600" />
+              分析置信度
+            </h3>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {analysis.confidenceAssessment.highConfidence.length > 0 && (
+                <div className="bg-green-50 rounded-xl p-4">
+                  <p className="text-sm font-semibold text-green-700 mb-2">高置信度</p>
+                  <ul className="space-y-1.5">{analysis.confidenceAssessment.highConfidence.map((h, i) => (
+                    <li key={i} className="text-sm text-slate-700 flex items-start"><CheckCircle className="w-3.5 h-3.5 text-green-500 mr-1.5 mt-0.5 shrink-0" />{h}</li>
+                  ))}</ul>
+                </div>
+              )}
+              {analysis.confidenceAssessment.needsVerification.length > 0 && (
+                <div className="bg-yellow-50 rounded-xl p-4">
+                  <p className="text-sm font-semibold text-yellow-700 mb-2">需进一步验证</p>
+                  <ul className="space-y-1.5">{analysis.confidenceAssessment.needsVerification.map((n, i) => (
+                    <li key={i} className="text-sm text-slate-700 flex items-start"><AlertTriangle className="w-3.5 h-3.5 text-yellow-500 mr-1.5 mt-0.5 shrink-0" />{n}</li>
+                  ))}</ul>
+                </div>
+              )}
+            </div>
+          </CardContent>
+        </Card>
       )}
 
       {/* History */}
