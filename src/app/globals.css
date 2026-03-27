@@ -1,4 +1,5 @@
 @import "tailwindcss";
+@import url('https://fonts.googleapis.com/css2?family=Sora:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&display=swap');
 
 @theme {
   --color-primary: #2563eb;
@@ -26,6 +27,59 @@
 
 body {
   font-family: system-ui, -apple-system, sans-serif;
+}
+
+/* Research page typography */
+.font-sora { font-family: 'Sora', system-ui, sans-serif; }
+.font-mono-data { font-family: 'JetBrains Mono', monospace; }
+
+/* Staggered entrance animation */
+@keyframes fadeSlideUp {
+  from { opacity: 0; transform: translateY(20px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+.anim-enter {
+  animation: fadeSlideUp 0.5s ease-out both;
+}
+.anim-delay-1 { animation-delay: 0.05s; }
+.anim-delay-2 { animation-delay: 0.1s; }
+.anim-delay-3 { animation-delay: 0.15s; }
+.anim-delay-4 { animation-delay: 0.2s; }
+.anim-delay-5 { animation-delay: 0.25s; }
+.anim-delay-6 { animation-delay: 0.3s; }
+.anim-delay-7 { animation-delay: 0.35s; }
+.anim-delay-8 { animation-delay: 0.4s; }
+
+/* Score ring animation */
+@keyframes scoreRingFill {
+  from { --score-progress: 0; }
+}
+.score-ring {
+  background: conic-gradient(var(--ring-color) calc(var(--score-progress) * 1%), #1e293b22 0);
+  animation: scoreRingFill 1s ease-out;
+}
+
+/* Noise texture overlay */
+.noise-bg::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='.04'/%3E%3C/svg%3E");
+  pointer-events: none;
+  border-radius: inherit;
+}
+
+/* Strength bar animation */
+@keyframes barGrow {
+  from { width: 0; }
+}
+.strength-bar {
+  animation: barGrow 0.8s ease-out both;
+}
+
+/* Subtle glow on scores */
+.score-glow {
+  box-shadow: 0 0 20px -4px var(--glow-color, rgba(13, 148, 136, 0.3));
 }
 
 /* Global focus-visible styles for accessibility */
